@@ -1,0 +1,727 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>مخزني</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0E6B55">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Reem+Kufi:wght@500;700&display=swap" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="style.css?v=36">
+<script>
+/* ===== إعدادات الترخيص: للنسخة اللي بتبعتها للعملاء بس ===== */
+var LICENSE_PUBLIC_KEY = '';
+var CONTACT_TEXT = 'للتفعيل أو التجديد كلّم: 01098666227';
+if(LICENSE_PUBLIC_KEY){ document.documentElement.className += ' locked'; }
+document.documentElement.className += ' authing';
+</script>
+<script>
+window.onerror=function(m){ window.__err=m; };
+setTimeout(function(){
+  var s=document.getElementById('sync');
+  var cl=document.getElementById('cloud');
+  if(s && s.textContent.indexOf('بيحمّل')>-1 && !(window.CLOUD_ON && !window.FB_ERR && !window.__err)){
+    var d=document.createElement('div');
+    d.style.cssText='background:#8F2A1F;color:#fff;padding:12px;margin:8px;border-radius:8px;font-size:14px';
+    var v=(navigator.userAgent.match(/Chrome\/(\d+)/)||[])[1];
+    d.textContent='البرنامج مش شغال. تأكد إن كل الملفات (index.html و style.css و fb.js و app1.js و app2.js و app3.js و cloud.js و app4.js و app5.js و app6.js و qr.js) في نفس الفولدر واتنسخوا كاملين، وابعت الشريط ده لـ Claude. '+(window.__err?'(الخطأ: '+window.__err+') ':'')+'(Chrome '+(v||'مش معروف')+')';
+    document.body.insertBefore(d,document.body.firstChild);
+  }
+},15000);
+</script>
+</head>
+<body>
+<div class="wrap" id="app" dir="rtl" lang="ar">
+  <header class="top">
+    <div class="brand">
+      <h1>مخزني</h1>
+      <div class="brand-r"><span id="who" class="chip who"></span><button id="lock-now" class="btn ghost sm" type="button" data-act="logout" hidden>قفل</button><span id="sync" class="chip">بيحمّل…</span></div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="الشاشات">
+      <button class="tab" role="tab" data-tab="sell" id="t-sell">البيع</button>
+      <button class="tab" role="tab" data-tab="stock" id="t-stock">المخزن</button>
+      <button class="tab" role="tab" data-tab="sup" id="t-sup">الموردين</button>
+      <button class="tab" role="tab" data-tab="cust" id="t-cust">العملاء</button>
+      <button class="tab" role="tab" data-tab="inv" id="t-inv">الفواتير</button>
+      <button class="tab" role="tab" data-tab="exp" id="t-exp">المصروفات</button>
+      <button class="tab" role="tab" data-tab="report" id="t-report">التقرير</button>
+      <button class="tab" role="tab" data-tab="sec" id="t-sec" hidden>الأمان</button>
+    </nav>
+    <p id="lic-note" class="lic-note" hidden></p>
+  </header>
+
+  <div id="bk-warn" class="bk-warn" role="status" hidden></div>
+  <main>
+      <div class="panel inv-edit" id="inv-edit" hidden>
+        <div class="sd-head">
+          <h2 id="ie-title">تعديل فاتورة</h2>
+          <button class="btn ghost sm" type="button" data-act="ie-close">إغلاق</button>
+        </div>
+        <p class="hint" id="ie-hint"></p>
+        <ul id="ie-lines" class="clist"></ul>
+        <div class="ie-add">
+          <select id="ie-add" aria-label="صنف يتضاف للفاتورة"></select>
+          <button class="btn" type="button" data-act="ie-addbtn">+ ضيف للفاتورة</button>
+        </div>
+        <div class="fee-row"><label for="ie-fee">خدمة التوصيل</label><input id="ie-fee" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></div>
+        <div class="total"><span>إجمالي الفاتورة بعد التعديل</span><strong id="ie-total">0 ج.م</strong></div>
+        <p class="sum-line" id="ie-diff"></p>
+        <div class="row-actions">
+          <button class="btn primary" type="button" data-act="ie-save">احفظ التعديل</button>
+          <button class="btn danger" type="button" id="ie-cancel" data-act="ie-cancel">إلغاء الفاتورة كلها (مرتجع كامل)</button>
+        </div>
+      </div>
+
+    <section id="v-sell" aria-labelledby="t-sell">
+      <div class="sell-grid">
+        <div class="panel">
+          <h2>الأصناف</h2>
+          <label class="sr" for="q">دوّر على صنف</label>
+          <input id="q" type="search" placeholder="دوّر بالاسم أو امسح الباركود…" autocomplete="off">
+          <ul id="plist" class="plist"></ul>
+        </div>
+        <div class="panel cart">
+          <h2>الفاتورة</h2>
+          <div id="ctabs" class="ctabs" role="tablist" aria-label="الفواتير المفتوحة"></div>
+          <ul id="cart" class="clist"></ul>
+          <div class="fee-row cust-row"><label for="cust-q">العميل (اختياري)</label><input id="cust-q" type="search" autocomplete="off" placeholder="ابحث بالاسم أو التليفون…"><button type="button" class="btn sm" data-act="newcust-sale" aria-label="عميل جديد">+ جديد</button></div>
+          <div class="fee-row cust-row"><label for="cust">اختار</label><select id="cust"></select></div>
+          <div class="fee-row" id="paid-row" hidden><label for="paid">المدفوع الآن (لو أقل = آجل)</label><input id="paid" type="number" inputmode="decimal" min="0" step="any" placeholder="كامل"></div>
+          <div class="fee-row"><label for="fee">خدمة التوصيل (لو فيه)</label><input id="fee" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></div>
+          <div class="total"><span>الإجمالي</span><strong id="total">0 ج.م</strong></div>
+          <button id="checkout" class="btn primary big" type="button">تأكيد البيع</button>
+          <div id="last-sale" class="last-sale" hidden><span id="ls-txt"></span><button type="button" class="btn sm" data-act="print" data-sid="">اطبع الفاتورة</button></div>
+        </div>
+      </div>
+      <div class="panel" id="mine">
+        <h2>آخر فواتير النهارده</h2>
+        <ul id="mine-list" class="recent"></ul>
+      </div>
+      <div class="panel" id="closer">
+        <h2>قفل الدرج / نهاية الوردية</h2>
+        <p class="hint">عُد الفلوس اللي في الدرج واكتب المبلغ. البرنامج بيسجّله ويقارنه بالمبيعات، والمالك هو اللي بيشوف الفرق.</p>
+        <div class="pform">
+          <div><label for="cl-open">رصيد أول الوردية (اختياري)</label><input id="cl-open" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></div>
+          <div><label for="cl-amount">الفلوس اللي في الدرج دلوقتي</label><input id="cl-amount" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></div>
+          <div class="wide"><label for="cl-note">ملاحظة (اختياري)</label><input id="cl-note" type="text"></div>
+          <div class="actions"><button class="btn primary" type="button" data-act="cl-save">سجّل قفل الدرج</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="v-stock" aria-labelledby="t-stock" hidden>
+      <div class="panel">
+        <h2 id="f-title">إضافة صنف</h2>
+        <form id="pform" class="pform" autocomplete="off">
+          <div class="wide">
+            <label for="f-name">اسم الصنف</label>
+            <input id="f-name" type="text" placeholder="مثلا: أرز 1 كجم">
+          </div>
+          <div>
+            <label for="f-price">سعر البيع (ج.م)</label>
+            <input id="f-price" type="number" inputmode="decimal" min="0" step="any" placeholder="0">
+          </div>
+          <div>
+            <label for="f-cost">سعر الجملة (اختياري)</label>
+            <input id="f-cost" type="number" inputmode="decimal" min="0" step="any" placeholder="0">
+          </div>
+          <div>
+            <label for="f-qty" id="f-qty-label">الكمية</label>
+            <input id="f-qty" type="number" inputmode="decimal" min="0" step="any" placeholder="0">
+          </div>
+          <div class="svc-row">
+            <label class="chk"><input type="checkbox" id="f-svc"> صنف خدمة (إيجار، توصيل…) من غير مخزون</label>
+          </div>
+          <div>
+            <label for="f-unit">الوحدة (بتتباع بإيه؟)</label>
+            <select id="f-unit"><option value="">قطعة</option><option>متر</option><option>كيلو</option><option>جرام</option><option>لتر</option></select>
+          </div>
+          <div>
+            <label for="f-pack">عدد القطع في الكرتونة (اختياري)</label>
+            <input id="f-pack" type="number" inputmode="numeric" min="2" step="1" placeholder="مثلا: 12">
+          </div>
+          <div id="f-ctn-wrap">
+            <label for="f-ctn">كراتين جديدة (بتتضاف للكمية)</label>
+            <input id="f-ctn" type="number" inputmode="decimal" min="0" step="any" placeholder="0">
+            <small id="f-ctn-hint" class="hint"></small>
+          </div>
+          <div>
+            <label for="f-barcode">باركود (اختياري)</label>
+            <input id="f-barcode" type="text" inputmode="numeric" autocomplete="off" placeholder="امسحه بالقارئ">
+          </div>
+          <div class="actions">
+            <button class="btn primary" id="f-submit" type="submit">إضافة للمخزن</button>
+            <button class="btn ghost" id="f-cancel" type="button" hidden>إلغاء</button>
+          </div>
+        </form>
+      </div>
+      <div class="panel">
+        <h2>الأصناف اللي في المخزن <span id="s-count" class="pmeta"></span></h2>
+        <input id="s-q" type="search" placeholder="دوّر في المخزن بالاسم أو الباركود" aria-label="بحث في المخزن" autocomplete="off">
+        <ul id="slist" class="slist"></ul>
+        <button type="button" class="btn" id="s-more" data-act="smore" hidden>اعرض أكتر</button>
+      </div>
+      <div class="panel" id="print-set">
+        <h2>بيانات الفاتورة المطبوعة</h2>
+        <div class="pform">
+          <div class="wide"><label for="ps-name">اسم المحل</label><input id="ps-name" type="text" placeholder="مثلا: سوبر ماركت النور"></div>
+          <div class="wide"><label for="ps-foot">سطر في آخر الفاتورة</label><input id="ps-foot" type="text" placeholder="شكرا لزيارتكم"></div>
+          <div class="wide"><label for="ps-qr">لينك صفحة الفيس أو الإنستا (يطلع كيو ار كود في آخر الفاتورة)</label><input id="ps-qr" type="text" dir="ltr" inputmode="url" placeholder="facebook.com/اسم-الصفحة"></div>
+          <div class="wide"><label for="ps-qrt">الكلمة اللي فوق الكيو ار كود</label><input id="ps-qrt" type="text" placeholder="تابعونا على فيسبوك"></div>
+          <div><label for="ps-w">عرض الورق</label><select id="ps-w"><option value="80">80 مم</option><option value="58">58 مم</option></select></div>
+        </div>
+        <p class="hint">بتتحفظ لوحدها أول ما تغيّر أي خانة.</p>
+      </div>
+      <div class="panel" id="imp-panel" hidden>
+        <h2>استيراد أصناف من Excel أو Word</h2>
+        <p class="hint">لو عند المحل ملف Excel بأصنافه، (أو ملف Word فيه الأصناف في جدول) ارفعه هنا والبرنامج يضيف كل الأصناف مرة واحدة بدل ما تكتبها واحد واحد. نزّل النموذج لو عايز تملاه بنفسك.</p>
+        <div class="row-actions">
+          <button class="btn primary" id="imp-pick" type="button">اختار ملف Excel أو Word أو CSV</button>
+          <button class="btn" id="imp-tpl" type="button">نزّل نموذج Excel</button>
+          <input id="imp-file" type="file" accept=".xlsx,.docx,.csv,.txt,text/csv" hidden>
+        </div>
+        <p class="hint" id="imp-msg" hidden></p>
+        <div id="imp-map" hidden>
+          <p class="hint" id="imp-info"></p>
+          <div class="pform">
+            <div><label for="imp-c-name">عمود اسم الصنف *</label><select id="imp-c-name"></select></div>
+            <div><label for="imp-c-price">عمود سعر البيع *</label><select id="imp-c-price"></select></div>
+            <div><label for="imp-c-cost">عمود سعر الجملة</label><select id="imp-c-cost"></select></div>
+            <div><label for="imp-c-qty">عمود الكمية</label><select id="imp-c-qty"></select></div>
+            <div><label for="imp-c-barcode">عمود الباركود</label><select id="imp-c-barcode"></select></div>
+            <div><label for="imp-c-pack">عمود القطع في الكرتونة</label><select id="imp-c-pack"></select></div>
+            <div><label for="imp-c-unit">عمود الوحدة (متر / قطعة / كيلو…)</label><select id="imp-c-unit"></select></div>
+            <div class="wide"><label for="imp-kg">الأصناف اللي وحدتها «جرام»: سعر الجملة بتاعها لكل…</label>
+              <select id="imp-kg"><option value="1000">كيلو (يتقسم على 1000 عشان يبقى لكل جرام)</option><option value="1">جرام (زي ما هو في الملف)</option></select></div>
+            <div class="wide"><label for="imp-dup">لو الصنف موجود قبل كده (نفس الباركود أو الاسم)</label>
+              <select id="imp-dup"><option value="skip">سيبه زي ما هو</option><option value="upd">حدّث بياناته من الملف</option></select></div>
+          </div>
+          <p class="hint" id="imp-prev"></p>
+          <div class="row-actions">
+            <button class="btn primary" id="imp-go" type="button">استورد الأصناف</button>
+            <button class="btn ghost" id="imp-cancel" type="button">إلغاء</button>
+          </div>
+        </div>
+        <div class="wipe-box" id="wipe-box">
+          <h3>مسح كل الأصناف</h3>
+          <p class="hint">لو رفعت أصناف غلط وعايز تبدأ من الأول: ده بيمسح <b>كل الأصناف</b> من المخزن (والسحابة). الفواتير والعملاء والموردين مش بيتمسحوا. <b>مفيش رجوع</b>، فنزّل نسخة احتياطية الأول لو عندك شك.</p>
+          <button class="btn danger" id="wipe-open" type="button">مسح كل الأصناف…</button>
+          <div id="wipe-confirm" hidden>
+            <label for="wipe-txt">اكتب كلمة <b>مسح</b> عشان تأكد:</label>
+            <input id="wipe-txt" type="text" autocomplete="off" placeholder="مسح">
+            <div class="row-actions">
+              <button class="btn danger" id="wipe-go" type="button" disabled>أيوه، امسح كل الأصناف</button>
+              <button class="btn ghost" id="wipe-cancel" type="button">إلغاء</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel" id="backup" hidden>
+        <h2>نسخة احتياطية</h2>
+        <p class="hint" id="b-last">لسه ماعملتش نسخة احتياطية.</p>
+        <div class="row-actions">
+          <button class="btn primary" id="b-xlsx" type="button">حمّل نسخة Excel</button>
+          <button class="btn" id="b-export" type="button">حمّل ملف الاسترجاع</button>
+          <button class="btn" id="b-drive" type="button">ارفع نسخة على جوجل درايف</button>
+          <button class="btn" id="b-import" type="button">استرجع من ملف</button>
+          <input id="b-file" type="file" accept=".makhzani,.json,application/json" hidden>
+        </div>
+        <p class="hint" id="b-drive-msg" hidden></p>
+        <p class="hint">«نسخة Excel» بتفتحها بـ Excel وتقراها وتطبعها، بس مش بترجع للبرنامج. «ملف الاسترجاع» هو اللي بيرجّع كل بياناتك لو الجهاز اتبدل. احتفظ بالاتنين.</p>
+        <div id="b-confirm" class="b-confirm" hidden>
+          <p id="b-msg"></p>
+          <div class="row-actions">
+            <button class="btn danger" id="b-yes" type="button">استرجع واستبدل البيانات</button>
+            <button class="btn ghost" id="b-no" type="button">إلغاء</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="v-sup" aria-labelledby="t-sup" hidden>
+      <div id="sup-list-view">
+        <div class="panel">
+          <h2>إضافة مورد</h2>
+          <form id="sform" class="pform" autocomplete="off">
+            <div class="wide">
+              <label for="s-name">اسم المورد</label>
+              <input id="s-name" type="text" placeholder="مثلا: شركة النور">
+            </div>
+            <div>
+              <label for="s-phone">التليفون (اختياري)</label>
+              <input id="s-phone" type="text" inputmode="tel" placeholder="01xxxxxxxxx">
+            </div>
+            <div class="wide">
+              <label for="s-addr">العنوان (اختياري)</label>
+              <input id="s-addr" type="text" placeholder="مثلا: المنطقة الصناعية، العاشر من رمضان">
+            </div>
+            <div class="actions">
+              <button class="btn primary" type="submit">إضافة المورد</button>
+            </div>
+          </form>
+        </div>
+        <div id="pimp-sup"></div>
+        <div class="panel">
+          <h2>الموردين</h2>
+          <input id="su-q" type="search" placeholder="ابحث بالاسم أو التليفون أو العنوان" autocomplete="off">
+          <ul id="suplist" class="slist"></ul>
+        </div>
+      </div>
+
+      <div id="sup-detail" hidden>
+        <button class="btn ghost back" id="sd-back" type="button" data-act="supback">← كل الموردين</button>
+        <div class="panel">
+          <div class="sd-head">
+            <h2 id="sd-name"></h2>
+            <span id="sd-pill" class="pill zero"></span>
+          </div>
+          <p class="hint" id="sd-phone"></p>
+          <div id="sd-tiles" class="tiles"></div>
+        </div>
+
+        <div class="panel" id="sd-link" hidden></div>
+
+        <div class="panel inv-edit" id="ent-edit" hidden>
+          <div class="sd-head">
+            <h2 id="ee-title">تعديل حركة</h2>
+            <button class="btn ghost sm" type="button" data-act="ee-close">إغلاق</button>
+          </div>
+          <p class="hint" id="ee-hint"></p>
+          <div class="pform">
+            <div id="ee-f-qty"><label for="ee-qty">الكمية</label><input id="ee-qty" type="number" inputmode="decimal" min="0" step="any"></div>
+            <div id="ee-f-cost"><label for="ee-cost">سعر الوحدة</label><input id="ee-cost" type="number" inputmode="decimal" min="0" step="any"></div>
+            <div id="ee-f-paid"><label for="ee-paid">اللي دفعته وقتها</label><input id="ee-paid" type="number" inputmode="decimal" min="0" step="any"></div>
+            <div id="ee-f-amount"><label for="ee-amount">المبلغ</label><input id="ee-amount" type="number" inputmode="decimal" min="0" step="any"></div>
+            <div id="ee-f-note" class="wide"><label for="ee-note">ملاحظة</label><input id="ee-note" type="text"></div>
+          </div>
+          <p class="sum-line" id="ee-sum"></p>
+          <div class="row-actions">
+            <button class="btn primary" type="button" data-act="ee-save">احفظ التعديل</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>بضاعة جديدة من المورد</h2>
+          <form id="pu-form" class="pform" autocomplete="off">
+            <div class="wide">
+              <label for="pu-q">الصنف</label>
+              <div class="qwrap"><input id="pu-q" type="search" placeholder="ابحث عن الصنف بالاسم أو الباركود…" autocomplete="off"><button type="button" class="qx" data-qx="pu-q" aria-label="امسح البحث" hidden>×</button></div>
+              <select id="pu-prod"></select>
+            </div>
+            <div id="pu-new" class="sub" hidden>
+              <div>
+                <label for="pu-newname">اسم الصنف الجديد</label>
+                <input id="pu-newname" type="text" placeholder="مثلا: عدس 1 كجم">
+              </div>
+              <div>
+                <label for="pu-newprice">سعر البيع للزبون (ج.م)</label>
+                <input id="pu-newprice" type="number" inputmode="decimal" min="0" step="any" placeholder="0">
+              </div>
+            </div>
+            <div>
+              <label for="pu-qty">الكمية</label>
+              <input id="pu-qty" type="number" inputmode="decimal" min="0" step="any" placeholder="0">
+            </div>
+            <div>
+              <label for="pu-cost">سعر الجملة للوحدة</label>
+              <input id="pu-cost" type="number" inputmode="decimal" min="0" step="any" placeholder="0">
+            </div>
+            <div>
+              <label for="pu-paid">دفعت كام دلوقتي</label>
+              <input id="pu-paid" type="number" inputmode="decimal" min="0" step="any" placeholder="0">
+            </div>
+            <p class="sum-line" id="pu-total">إجمالي البضاعة: 0 ج.م</p>
+            <div class="actions">
+              <button class="btn primary" type="submit">سجّل البضاعة وزوّد المخزن</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h2>مرتجع للمورد</h2>
+          <form id="rt-form" class="pform" autocomplete="off">
+            <div class="wide">
+              <label for="rt-q">الصنف اللي راجع للمورد</label>
+              <div class="qwrap"><input id="rt-q" type="search" placeholder="ابحث عن الصنف بالاسم أو الباركود…" autocomplete="off"><button type="button" class="qx" data-qx="rt-q" aria-label="امسح البحث" hidden>×</button></div>
+              <select id="rt-prod"></select>
+            </div>
+            <div>
+              <label for="rt-qty">الكمية المرتجعة</label>
+              <input id="rt-qty" type="number" inputmode="decimal" min="0" step="any" placeholder="0">
+            </div>
+            <div>
+              <label for="rt-cost">سعر الوحدة (اللي اشتريت بيه)</label>
+              <input id="rt-cost" type="number" inputmode="decimal" min="0" step="any" placeholder="0">
+            </div>
+            <div class="wide">
+              <label for="rt-note">ملاحظة (اختياري)</label>
+              <input id="rt-note" type="text" placeholder="مثلا: تالف / غلط في الصنف">
+            </div>
+            <p class="sum-line" id="rt-total">قيمة المرتجع: 0 ج.م</p>
+            <div class="actions">
+              <button class="btn primary" type="submit">سجّل المرتجع وانقّص المخزن</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h2>تسجيل دفعة للمورد</h2>
+          <form id="pay-form" class="pform" autocomplete="off">
+            <div>
+              <label for="pay-amount">المبلغ (ج.م)</label>
+              <input id="pay-amount" type="number" inputmode="decimal" min="0" step="any" placeholder="0">
+            </div>
+            <div class="wide">
+              <label for="pay-note">ملاحظة (اختياري)</label>
+              <input id="pay-note" type="text" placeholder="مثلا: كاش / تحويل">
+            </div>
+            <div class="actions">
+              <button class="btn primary" type="submit">سجّل الدفعة</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h2>حركات الحساب</h2>
+          <ul id="sd-ledger" class="ledger"></ul>
+        </div>
+
+        <div class="panel">
+          <div class="row-actions"><button class="btn" type="button" data-act="editsup">غيّر الاسم / التليفون / العنوان</button><button class="btn" type="button" data-act="exp-sup">تصدير حساب المورد لـ Excel</button><button class="btn danger" id="sd-del" type="button" data-act="delsup">حذف المورد</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="v-cust" aria-labelledby="t-cust" hidden>
+      <div id="cust-list-view">
+        <div class="panel">
+          <h2>إضافة عميل</h2>
+          <form id="cform" class="pform" autocomplete="off">
+            <div class="wide"><label for="cu-name">اسم العميل</label><input id="cu-name" type="text" placeholder="مثلا: أحمد محمود"></div>
+            <div><label for="cu-phone">التليفون (اختياري)</label><input id="cu-phone" type="text" inputmode="tel" placeholder="01xxxxxxxxx"></div>
+            <div class="wide"><label for="cu-addr">العنوان (اختياري)</label><input id="cu-addr" type="text" placeholder="مثلا: شارع التحرير، الدقي"></div>
+            <div class="actions"><button class="btn primary" type="submit">إضافة العميل</button></div>
+          </form>
+        </div>
+        <div id="pimp-cust"></div>
+        <div class="panel">
+          <h2>العملاء</h2>
+          <input id="cu-q" type="search" placeholder="ابحث بالاسم أو التليفون أو العنوان" autocomplete="off">
+          <ul id="custlist" class="slist"></ul>
+        </div>
+      </div>
+      <div id="cust-detail" hidden>
+        <button class="btn ghost back" type="button" data-act="custback">← كل العملاء</button>
+        <div class="panel">
+          <h2 id="cud-name"></h2>
+          <p class="hint" id="cud-phone"></p>
+          <div id="cud-tiles" class="tiles"></div>
+          <div class="row-actions">
+            <button class="btn" type="button" data-act="editcust">غيّر الاسم / التليفون / العنوان</button>
+            <button class="btn danger" type="button" data-act="delcust">مسح العميل</button>
+          </div>
+          <p class="hint">مسح العميل مش بيمسح فواتيره، الفواتير القديمة بتفضل باسمه.</p>
+        </div>
+        <div class="panel" id="cud-owner">
+          <h2>حساب العميل (له / عليه)</h2>
+          <p class="hint">لما العميل يشتري آجل: اختار اسمه في البيع واكتب «المدفوع الآن» (الباقي بيتسجل عليه). وهنا تسجّل اللي بيدفعه بعد كده، أو دين قديم ليه قبل البرنامج.</p>
+          <form id="cp-form" class="pform" autocomplete="off">
+            <div><label for="cp-amount">دفعة من العميل</label><input id="cp-amount" type="number" inputmode="decimal" min="0" step="any" placeholder="المبلغ"></div>
+            <div><label for="cp-note">ملاحظة (اختياري)</label><input id="cp-note" type="text" placeholder="كاش / تحويل"></div>
+            <div class="actions"><button class="btn primary" type="submit">سجّل الدفعة</button></div>
+          </form>
+          <form id="cdb-form" class="pform" autocomplete="off">
+            <div><label for="cd-amount">دين قديم عليه</label><input id="cd-amount" type="number" inputmode="decimal" min="0" step="any" placeholder="المبلغ"></div>
+            <div><label for="cd-note">ملاحظة (اختياري)</label><input id="cd-note" type="text" placeholder="مثلا: رصيد من الدفتر"></div>
+            <div class="actions"><button class="btn" type="submit">سجّل الدين</button></div>
+          </form>
+        </div>
+        <div class="panel" id="cud-link" hidden></div>
+        <div class="panel">
+          <h2>حركات الحساب</h2>
+          <ul id="cud-ledger" class="ledger"></ul>
+        </div>
+        <div class="panel">
+          <h2>فواتير العميل</h2>
+          <ul id="cud-inv" class="recent"></ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="v-inv" aria-labelledby="t-inv" hidden>
+      <div class="seg" role="group" aria-label="فترة الفواتير">
+        <button type="button" data-iper="today" aria-pressed="true">النهارده</button>
+        <button type="button" data-iper="week" aria-pressed="false">آخر 7 أيام</button>
+        <button type="button" data-iper="month" aria-pressed="false">الشهر ده</button>
+        <button type="button" data-iper="all" aria-pressed="false">من الأول</button>
+      </div>
+      <div id="inv-tiles" class="tiles"></div>
+      <div class="panel">
+        <label class="sr" for="inv-q">بحث في الفواتير</label>
+        <input id="inv-q" type="search" placeholder="ابحث برقم الفاتورة أو اسم العميل أو الصنف" autocomplete="off">
+        <ul id="inv-list" class="recent"></ul>
+        <div class="row-actions"><button class="btn" type="button" id="inv-more" data-act="invmore" hidden>اعرض أكتر</button><button class="btn" type="button" id="inv-old" hidden>عرض الفواتير الأقدم من 45 يوم</button></div>
+        <p class="hint" id="inv-note"></p>
+      </div>
+    </section>
+
+    <section id="v-exp" aria-labelledby="t-exp" hidden>
+      <div class="panel">
+        <h2>تسجيل مصروف</h2>
+        <form id="exform" class="pform" autocomplete="off">
+          <div><label for="ex-date">التاريخ</label><input id="ex-date" type="date"></div>
+          <div><label for="ex-cat">النوع</label><select id="ex-cat"></select></div>
+          <div class="wide" id="ex-new-wrap" hidden><label for="ex-new">اسم النوع الجديد</label><input id="ex-new" type="text" maxlength="30" placeholder="مثلا: عمولة توصيل"></div>
+          <div><label for="ex-amt">المبلغ</label><input id="ex-amt" type="number" inputmode="decimal" min="0" step="any" placeholder="0"></div>
+          <div class="wide"><label for="ex-note">ملاحظة (اختياري)</label><input id="ex-note" type="text" maxlength="80" placeholder="مثلا: مرتب أحمد عن شهر 11"></div>
+          <div class="actions"><button class="btn primary" type="submit">سجّل المصروف</button></div>
+        </form>
+      </div>
+      <div class="panel">
+        <h2>المصروفات</h2>
+        <div class="seg seg4" role="group" aria-label="الفترة">
+          <button type="button" data-exper="today" aria-pressed="false">النهارده</button>
+          <button type="button" data-exper="month" aria-pressed="true">الشهر ده</button>
+          <button type="button" data-exper="prev" aria-pressed="false">الشهر اللي فات</button>
+          <button type="button" data-exper="all" aria-pressed="false">من الأول</button>
+        </div>
+        <div id="ex-tiles" class="tiles"></div>
+        <h3>حسب النوع</h3>
+        <div class="tbl-wrap"><table><thead><tr><th>النوع</th><th class="n">الإجمالي</th><th class="n">النسبة</th></tr></thead><tbody id="ex-bycat"></tbody></table></div>
+      </div>
+      <div class="panel">
+        <h2>التفاصيل</h2>
+        <ul id="ex-list" class="ledger"></ul>
+      </div>
+    </section>
+
+    <section id="v-report" aria-labelledby="t-report" hidden>
+      <div class="seg" role="group" aria-label="الفترة">
+        <button type="button" data-period="today" aria-pressed="true">النهارده</button>
+        <button type="button" data-period="month" aria-pressed="false">الشهر ده</button>
+        <button type="button" data-period="all" aria-pressed="false">من الأول</button>
+      </div>
+      <div id="tiles" class="tiles"></div>
+      <div class="panel">
+        <h2>أكبر 10 أصناف في «قيمة اللي فاضل»</h2>
+        <p class="hint">القيمة = الكمية × سعر البيع. لو صنف هنا رقمه كبير بشكل غريب، يبقى كميته أو سعره في الاستيراد غلط (مثلاً الكمية بالجرام والسعر للكيلو).</p>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>الصنف</th><th class="n">الكمية</th><th class="n">سعر البيع</th><th class="n">القيمة</th></tr></thead>
+          <tbody id="topval"></tbody>
+        </table></div>
+      </div>
+      <div class="panel">
+        <h2>كل صنف: اتباع كام وفاضل كام</h2>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>الصنف</th><th class="n">اتباع</th><th class="n">فاضل</th><th class="n">الإيراد</th></tr></thead>
+            <tbody id="rtable"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>آخر الفواتير</h2>
+        <ul id="recent" class="recent"></ul>
+      </div>
+      <div class="panel">
+        <h2>تصدير لـ Excel</h2>
+        <p class="hint">بيتصدّر حسب الفترة المختارة فوق (النهارده أو من الأول).</p>
+        <div class="row-actions">
+          <button class="btn" type="button" data-act="exp-items">تصدير الأصناف</button>
+          <button class="btn" type="button" data-act="exp-inv">تصدير الفواتير</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="v-sec" aria-labelledby="t-sec" hidden>
+      <div class="panel" id="cloud-migrate" hidden>
+        <h2>نقل بيانات الجهاز للسحابة</h2>
+        <p class="hint" id="cd-mig-txt"></p>
+        <div class="row-actions"><button class="btn primary" id="cd-migrate" type="button">انقل البيانات للسحابة</button></div>
+      </div>
+      <div class="panel" id="cloud-info" hidden>
+        <h2>حساب المحل والاشتراك</h2>
+        <p class="hint" id="cd-info"></p>
+        <div class="row-actions"><button class="btn ghost" id="cd-logout2" type="button">تسجيل خروج من حساب المحل</button></div>
+      </div>
+      <div class="panel">
+        <h2>ملخص النهارده</h2>
+        <div id="sec-tiles" class="tiles"></div>
+        <div class="row-actions"><button class="btn primary" type="button" data-act="wa-send">ابعت الملخص على واتساب</button></div>
+      </div>
+
+      <div class="panel" id="cc-panel" hidden>
+        <h2>حسابات الكاشيرين</h2>
+        <p class="hint">كل كاشير ليه حساب خاص بيه بيدخل بيه على جهازه. السيرفر نفسه بيمنعه من مسح الفواتير وتعديل الأسعار وقراءة الموردين والأرباح.</p>
+        <ul id="cc-list" class="slist"></ul>
+        <form id="cc-form" class="pform" autocomplete="off">
+          <div><label for="cc-name">اسم الكاشير</label><input id="cc-name" type="text" placeholder="مثلا: أحمد"></div>
+          <div><label for="cc-user">اسم الدخول (إنجليزي)</label><input id="cc-user" type="text" dir="ltr" placeholder="ahmed" autocapitalize="none"></div>
+          <div><label for="cc-pass">كلمة السر (6 على الأقل)</label><input id="cc-pass" type="password" autocomplete="new-password"></div>
+          <div class="actions"><button class="btn primary" id="cc-go" type="submit">ضيف كاشير</button></div>
+        </form>
+        <p class="hint">لو الكاشير نسي كلمة السر: وقّف حسابه وضيف حساب جديد باسم دخول مختلف.</p>
+      </div>
+
+      <div class="panel" id="u-panel">
+        <h2>حسابات الكاشير</h2>
+        <ul id="sec-users" class="slist"></ul>
+        <form id="u-form" class="pform" autocomplete="off">
+          <div><label for="u-name">اسم الكاشير</label><input id="u-name" type="text" placeholder="مثلا: أحمد"></div>
+          <div><label for="u-pin">PIN (4 لـ 8 أرقام)</label><input id="u-pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off"></div>
+          <div class="actions"><button class="btn primary" type="submit">ضيف كاشير أو غيّر PIN</button></div>
+        </form>
+        <p class="hint">لو كتبت اسم كاشير موجود، هيتغيّر الـ PIN بتاعه.</p>
+      </div>
+
+      <div class="panel">
+        <h2>PIN المالك</h2>
+        <form id="o-form" class="pform" autocomplete="off">
+          <div><label for="o-pin">PIN جديد</label><input id="o-pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off"></div>
+          <div><label for="o-pin2">أكّد الـ PIN</label><input id="o-pin2" type="password" inputmode="numeric" maxlength="8" autocomplete="off"></div>
+          <div class="actions"><button class="btn" type="submit">غيّر PIN المالك</button></div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <h2>الصلاحيات والإعدادات</h2>
+        <label class="chk"><input id="sc-inv" type="checkbox"> الكاشير يحتاج PIN المالك عشان يلغي أو يعدّل فاتورة</label>
+        <label class="chk"><input id="sc-stock" type="checkbox"> الكاشير يحتاج PIN المالك عشان يعدّل أو يمسح صنف</label>
+        <label class="chk"><input id="sc-price" type="checkbox"> الكاشير يقدر يغيّر سعر الصنف وقت البيع (للفاتورة دي بس، من غير ما يدخل المخزن). كل تغيير بيتسجل في سجل الأمان</label>
+        <div class="pform">
+          <div><label for="sc-auto">القفل التلقائي لو مفيش حركة</label>
+            <select id="sc-auto"><option value="0">متعطّل</option><option value="5">5 دقايق</option><option value="10">10 دقايق</option><option value="30">30 دقيقة</option></select></div>
+          <div><label for="sc-phone">رقم واتساب المالك (لإرسال الملخص)</label><input id="sc-phone" type="text" inputmode="tel" placeholder="2010xxxxxxxx"></div>
+        </div>
+        <p class="hint">الكاشير مابيشوفش الأرباح ولا سعر الجملة ولا الموردين ولا التقارير. وكل عملية حساسة بتتسجّل باسمه حتى لو مش محتاجة PIN.</p>
+      </div>
+
+      <div class="panel">
+        <h2>جرد المخزن</h2>
+        <p class="hint">عُد الأصناف على الرف واكتب الكمية الفعلية. اللي تسيبه فاضي مش هيتغيّر.</p>
+        <div class="row-actions"><button class="btn" type="button" data-act="cnt-open">ابدأ جرد</button></div>
+        <div id="cnt-box" hidden>
+          <div class="tbl-wrap"><table><thead><tr><th>الصنف</th><th class="n">في البرنامج</th><th class="n">الفعلي</th><th class="n">الفرق</th></tr></thead><tbody id="cnt-body"></tbody></table></div>
+          <div class="row-actions"><button class="btn danger" id="cnt-apply" type="button" data-act="cnt-apply">اعتمد الجرد وعدّل المخزن</button><button class="btn ghost" type="button" data-act="cnt-cancel">إلغاء</button></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>قفل الدرج</h2>
+        <ul id="sec-closes" class="recent"></ul>
+      </div>
+
+      <div class="panel">
+        <h2>سجل العمليات</h2>
+        <p class="hint">كل عملية متسجّلة بالوقت واسم اللي عملها، ومفيش زرار يمسح منه.</p>
+        <div class="pform">
+          <div class="wide"><label for="aud-filter">عرض</label>
+            <select id="aud-filter"><option value="all">كل العمليات</option><option value="sens">الحساسة بس</option><option value="inv">الفواتير</option><option value="stk">المخزن</option><option value="login">الدخول</option><option value="close">قفل الدرج</option></select></div>
+        </div>
+        <div class="row-actions"><button class="btn" type="button" data-act="aud-verify">تحقق إن السجل سليم</button><button class="btn" type="button" data-act="aud-export">تصدير السجل لـ Excel</button></div>
+        <p class="hint" id="aud-state"></p>
+        <ul id="aud-list" class="recent"></ul>
+        <div class="row-actions"><button class="btn ghost" id="aud-more" type="button" data-act="aud-more" hidden>اعرض أكتر</button></div>
+      </div>
+    </section>
+  </main>
+
+</div>
+
+<div id="receipt" class="receipt" dir="rtl"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<div id="cloud" class="lock" dir="rtl" hidden>
+  <div class="panel lock-card">
+    <h1>مخزني</h1>
+    <h2 id="cd-title">بيتصل…</h2>
+    <p class="hint" id="cd-msg"></p>
+    <div id="cd-form" hidden>
+      <label for="cd-email">إيميل المحل</label>
+      <input id="cd-email" type="text" autocomplete="username" dir="ltr" autocapitalize="none" placeholder="الإيميل أو اسم الدخول">
+      <label for="cd-pass">الباسورد</label>
+      <input id="cd-pass" type="password" autocomplete="current-password" dir="ltr">
+      <button class="btn primary big" id="cd-go" type="button">دخول</button>
+      <button class="btn ghost" id="cd-forgot" type="button">نسيت الباسورد</button>
+    </div>
+    <p class="hint lock-err" id="cd-err"></p>
+    <button class="btn primary" id="cd-retry" type="button" hidden>تحقق تاني</button>
+    <button class="btn ghost" id="cd-out" type="button" hidden>خروج من الحساب</button>
+    <p class="hint" id="cd-contact"></p>
+  </div>
+</div>
+
+<div id="lock" class="lock" dir="rtl" hidden>
+  <div class="panel lock-card">
+    <h1>مخزني</h1>
+    <h2 id="lock-title">التطبيق محتاج تفعيل</h2>
+    <p class="hint" id="lock-msg"></p>
+    <div>
+      <label for="lock-dev">رقم جهازك (ابعته لينا عشان نعملك الكود)</label>
+      <div class="row-actions">
+        <input id="lock-dev" type="text" readonly>
+        <button class="btn" id="lock-copy" type="button">انسخ</button>
+      </div>
+    </div>
+    <div>
+      <label for="lock-code">كود التفعيل</label>
+      <textarea id="lock-code" rows="4" placeholder="الصق الكود هنا"></textarea>
+    </div>
+    <button class="btn primary big" id="lock-go" type="button">فعّل</button>
+    <p class="hint lock-err" id="lock-err"></p>
+    <p class="hint" id="lock-contact"></p>
+    <button class="btn ghost" id="lock-backup" type="button">حمّل نسخة احتياطية من بياناتك</button>
+  </div>
+</div>
+
+<div id="auth" class="lock" dir="rtl" hidden>
+  <div class="panel lock-card">
+    <h1>مخزني</h1>
+    <h2 id="au-title">تسجيل الدخول</h2>
+    <p class="hint" id="au-msg"></p>
+    <div id="au-user-wrap"><label for="au-user">الحساب</label><select id="au-user"></select></div>
+    <div id="au-pin-wrap"><label for="au-pin" id="au-pin-l">PIN</label><input id="au-pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off"></div>
+    <div id="au-pin2-wrap" hidden><label for="au-pin2">أكّد الـ PIN</label><input id="au-pin2" type="password" inputmode="numeric" maxlength="8" autocomplete="off"></div>
+    <div id="au-phone-wrap" hidden><label for="au-phone">رقم واتساب المالك (اختياري، عشان يوصله ملخص اليوم)</label><input id="au-phone" type="text" inputmode="tel" placeholder="2010xxxxxxxx"></div>
+    <div id="au-code-wrap" hidden>
+      <div id="au-lic-fields">
+        <label for="au-dev">رقم جهازك</label>
+        <input id="au-dev" type="text" readonly>
+        <label for="au-code">كود فك الـ PIN</label>
+        <textarea id="au-code" rows="4" placeholder="الصق الكود هنا"></textarea>
+      </div>
+      <div id="au-cloud-fields" hidden>
+        <label for="au-cpw">باسورد حساب المحل</label>
+        <input id="au-cpw" type="password" autocomplete="off" dir="ltr">
+      </div>
+    </div>
+    <button class="btn primary big" id="au-go" type="button">دخول</button>
+    <p class="hint lock-err" id="au-err"></p>
+    <button class="btn ghost" id="au-forgot" type="button" hidden>نسيت PIN المالك</button>
+    <button class="btn ghost" id="au-back" type="button" hidden>رجوع</button>
+  </div>
+</div>
+
+<div id="approve" class="modal" hidden>
+  <div class="panel">
+    <h2>محتاج موافقة المالك</h2>
+    <p class="hint" id="ap-msg"></p>
+    <label for="ap-pin">PIN المالك</label>
+    <input id="ap-pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off">
+    <p class="hint lock-err" id="ap-err"></p>
+    <div class="row-actions"><button class="btn primary" id="ap-ok" type="button">موافق</button><button class="btn ghost" id="ap-no" type="button">إلغاء</button></div>
+  </div>
+</div>
+
+<script src="fb.js?v=36" charset="utf-8"></script>
+<script src="app1.js?v=36" charset="utf-8"></script>
+<script src="app2.js?v=36" charset="utf-8"></script>
+<script src="app3.js?v=36" charset="utf-8"></script>
+<script src="cloud.js?v=36" charset="utf-8"></script>
+<script src="app4.js?v=36" charset="utf-8"></script>
+<script src="qr.js?v=36" charset="utf-8"></script>
+<script src="app6.js?v=36" charset="utf-8"></script>
+<script src="app5.js?v=36" charset="utf-8"></script>
+</body>
+</html>
