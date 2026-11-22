@@ -414,11 +414,15 @@
     $('#rtable').innerHTML = r.rows.length ? r.rows.map(function(x){
       return '<tr><td>'+esc(x.name)+'</td><td class="n">'+fmt(x.sold)+'</td><td class="n">'+(x.left===null?'—':fmt(x.left))+'</td><td class="n">'+money(x.rev)+'</td></tr>';
     }).join('') : '<tr><td colspan="4" class="note">مفيش أصناف لسه.</td></tr>';
-    var recent = sales.filter(function(s){ return period==='all' || s.ts>=r.t0; }).slice(0,15);
+    var bs = {}, bsl = sales.filter(function(s){ return period==='all' || s.ts>=r.t0; });
+    bsl.forEach(function(s){ var nm = s.by ? s.by.name : 'غير معروف', lc = s.loc||'', k = nm+'|'+lc, o = bs[k] || (bs[k] = {nm:nm,lc:lc,n:0,t:0}); o.n++; o.t += s.total; });
+    var bsr = Object.keys(bs).map(function(k){ return bs[k]; }).sort(function(a,b){ return b.t-a.t; });
+    $('#bysell').innerHTML = bsr.length ? bsr.map(function(o){ return '<tr><td>'+esc(o.nm)+'</td>'+'<td>'+esc(o.lc && typeof locName==='function' ? locName(o.lc) : 'المخزن الرئيسي')+'</td>'+'<td class="n">'+fmt(o.n)+'</td><td class="n">'+money(round(o.t))+'</td></tr>'; }).join('') : '<tr><td colspan="'+(4)+'" class="note">مفيش مبيعات في الفترة دي.</td></tr>';
+    var recent = bsl.slice(0,15);
     $('#recent').innerHTML = recent.length ? recent.map(function(s){
       var when = dt(s.ts);
       var tag = (s.edits && s.edits.length) ? '<span class="pill warn">اتعدّلت</span>' : '';
-      return '<li><span class="when">'+esc(invCode(s))+' · '+when+'</span><span class="what">'+s.lines.map(function(l){ return esc(l.name)+' ×'+esc(qtyText(l.qty,l.pack,l.u)); }).join('، ')+'</span><span class="sum">'+money(s.total)+'</span>'+
+      return '<li><span class="when">'+esc(invCode(s))+' · '+when+(s.by ? ' · <b>'+esc(s.by.name)+'</b>' : '') +(s.loc && typeof locName==='function' ? ' · '+esc(locName(s.loc)) : '')+'</span><span class="what">'+s.lines.map(function(l){ return esc(l.name)+' ×'+esc(qtyText(l.qty,l.pack,l.u)); }).join('، ')+'</span><span class="sum">'+money(s.total)+'</span>'+
         '<div class="inv-act"><button type="button" class="btn sm" data-act="editinv" data-sid="'+esc(s.id)+'">مرتجع / تعديل</button><button type="button" class="btn sm" data-act="print" data-sid="'+esc(s.id)+'">اطبع</button>'+tag+'</div></li>';
     }).join('') : '<li class="note">مفيش فواتير في الفترة دي.</li>';
   }

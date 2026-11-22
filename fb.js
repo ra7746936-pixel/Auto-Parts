@@ -169,8 +169,8 @@
             return Promise.resolve();
           },
           /* رقم فاتورة متسلسل للمحل كله (محتاج نت). floor = أكبر رقم الجهاز شايفه */
-          nextNo: function(floor){
-            var ref = F.doc(fs,root+'meta/counter');
+          nextNo: function(floor,name){
+            var ref = F.doc(fs,root+'meta/'+(name||'counter'));
             var tx = F.runTransaction(fs,function(t){
               return t.get(ref).then(function(s){
                 var n = Math.max(s.exists() ? (+s.data().seq||0) : 0, +floor||0) + 1;

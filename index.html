@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Auto Parts</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#C2410C">
+<meta name="theme-color" content="#24466F">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Reem+Kufi:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="style.css?v=p4">
+<link rel="stylesheet" href="style.css?v=p8">
 <script>
 /* ===== إعدادات الترخيص: للنسخة اللي بتبعتها للعملاء بس ===== */
 var LICENSE_PUBLIC_KEY = '';
@@ -526,7 +526,9 @@ setTimeout(function(){
         <div class="actions"><button class="btn primary" id="lc-go" type="button" disabled>نفّذ التحويل</button></div>
       </div>
       <div class="panel">
-        <h2>آخر التحويلات</h2>
+        <h2>حركة التحويلات</h2>
+        <div class="pform"><div><label for="lc-tper">الفترة</label><select id="lc-tper"><option value="1">النهارده</option><option value="7" selected>آخر 7 أيام</option><option value="30">آخر 30 يوم</option><option value="all">الكل</option></select></div></div>
+        <p class="hint" id="lc-tsum"></p>
         <ul id="lc-log" class="slist"></ul>
       </div>
       <div class="panel">
@@ -535,6 +537,11 @@ setTimeout(function(){
         <div class="actions"><button class="btn" id="lc-copy" type="button">انسخ التقرير (للواتساب)</button></div></div>
         <p class="hint">التقرير من آخر 45 يوم فواتير. الفواتير الأقدم مش بتظهر هنا.</p>
         <ul id="lc-rep" class="slist"></ul>
+      </div>
+      <div class="panel">
+        <h2>أصناف قربت تخلص في العربيات</h2>
+        <p class="hint">أي صنف اتحوّل للعربية ورصيده فيها 5 أو أقل.</p>
+        <ul id="lc-low" class="slist"></ul>
       </div>
       <div class="panel">
         <h2>الأرصدة في كل مكان</h2>
@@ -565,6 +572,15 @@ setTimeout(function(){
           <table>
             <thead><tr><th>الصنف</th><th class="n">اتباع</th><th class="n">فاضل</th><th class="n">الإيراد</th></tr></thead>
             <tbody id="rtable"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>المبيعات حسب البائع</h2>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>البائع</th><th>المكان</th><th class="n">فواتير</th><th class="n">الإجمالي</th></tr></thead>
+            <tbody id="bysell"></tbody>
           </table>
         </div>
       </div>
@@ -649,7 +665,7 @@ setTimeout(function(){
       <div class="panel">
         <h2>جرد المخزن</h2>
         <p class="hint">عُد الأصناف على الرف واكتب الكمية الفعلية. اللي تسيبه فاضي مش هيتغيّر.</p>
-        <div class="row-actions"><button class="btn" type="button" data-act="cnt-open">ابدأ جرد</button></div>
+        <div class="row-actions"><select id="cnt-loc" hidden aria-label="جرد أنهي مكان"></select><button class="btn" type="button" data-act="cnt-open">ابدأ جرد</button></div>
         <div id="cnt-box" hidden>
           <div class="tbl-wrap"><table><thead><tr><th>الصنف</th><th class="n">في البرنامج</th><th class="n">الفعلي</th><th class="n">الفرق</th></tr></thead><tbody id="cnt-body"></tbody></table></div>
           <div class="row-actions"><button class="btn danger" id="cnt-apply" type="button" data-act="cnt-apply">اعتمد الجرد وعدّل المخزن</button><button class="btn ghost" type="button" data-act="cnt-cancel">إلغاء</button></div>
@@ -763,15 +779,15 @@ setTimeout(function(){
   </div>
 </div>
 
-<script src="fb.js?v=p4" charset="utf-8"></script>
-<script src="app1.js?v=p4" charset="utf-8"></script>
-<script src="app2.js?v=p4" charset="utf-8"></script>
-<script src="app3.js?v=p4" charset="utf-8"></script>
-<script src="cloud.js?v=p4" charset="utf-8"></script>
-<script src="app4.js?v=p4" charset="utf-8"></script>
-<script src="qr.js?v=p4" charset="utf-8"></script>
-<script src="app6.js?v=p4" charset="utf-8"></script>
-<script src="app7.js?v=p4" charset="utf-8"></script>
-<script src="app5.js?v=p4" charset="utf-8"></script>
+<script src="fb.js?v=p8" charset="utf-8"></script>
+<script src="app1.js?v=p8" charset="utf-8"></script>
+<script src="app2.js?v=p8" charset="utf-8"></script>
+<script src="app3.js?v=p8" charset="utf-8"></script>
+<script src="cloud.js?v=p8" charset="utf-8"></script>
+<script src="app4.js?v=p8" charset="utf-8"></script>
+<script src="qr.js?v=p8" charset="utf-8"></script>
+<script src="app6.js?v=p8" charset="utf-8"></script>
+<script src="app7.js?v=p8" charset="utf-8"></script>
+<script src="app5.js?v=p8" charset="utf-8"></script>
 </body>
 </html>

@@ -2,7 +2,7 @@
   var SEC_KEY = 'qatea-sec', AUD_KEY = 'qatea-audit', FAIL_KEY = 'qatea-fail';
   var sec = null, aud = [], audBase = '', audBaseN = 0, sess = null, lastAct = Date.now();
   var approveCb = null, pendingReset = null, auMode = 'login', pendingUserDel = null, userDelTimer = null;
-  var countDraft = null, pendingCnt = false, cntTimer = null, audFilter = 'all', audShow = 60, secShown = false;
+  var countDraft = null, cntLoc = 'main', pendingCnt = false, cntTimer = null, audFilter = 'all', audShow = 60, secShown = false;
   var SENS = {cancel:1,edit:1,delp:1,editp:1,stock:1,fail:1,close:1,cfg:1,user:1,restore:1,count:1,reset:1,delsup:1,entdel:1,entedit:1,approve:1,price:1};
   var ACT_NAME = {login:'دخول',logout:'خروج',fail:'PIN غلط',cancel:'إلغاء فاتورة',edit:'تعديل فاتورة',print:'طباعة',addp:'إضافة صنف',editp:'تعديل صنف',delp:'مسح صنف',stock:'تعديل كمية',restock:'توريد',close:'قفل الدرج',cfg:'إعدادات',user:'حسابات',restore:'استرجاع نسخة',count:'جرد',reset:'فك PIN',sup:'مورد',delsup:'مسح مورد',entdel:'إلغاء حركة مورد',entedit:'تعديل حركة مورد',approve:'موافقة المالك',backup:'نسخة احتياطية',cust:'عميل',price:'سعر معدّل في البيع'};
   var AUD_GROUPS = {
@@ -461,35 +461,43 @@
     if(!countDraft) return;
     var list = Array.from(products.values()).filter(function(p){ return !p.svc; }).sort(byName);
     $('#cnt-body').innerHTML = list.map(function(p){
-      var v = countDraft[p.id], has = (v!==undefined && v!==''), df = has ? round(v-p.qty) : null;
-      return '<tr><td>'+esc(p.name)+'</td><td class="n">'+fmt(p.qty)+'</td><td class="n"><input type="number" inputmode="decimal" min="0" step="any" data-cnt="'+esc(p.id)+'" value="'+(has ? v : '')+'"></td>'+
+      var cur = locQty(p,cntLoc), v = countDraft[p.id], has = (v!==undefined && v!==''), df = has ? round(v-cur) : null;
+      return '<tr><td>'+esc(p.name)+'</td><td class="n">'+fmt(cur)+'</td><td class="n"><input type="number" inputmode="decimal" min="0" step="any" data-cnt="'+esc(p.id)+'" value="'+(has ? v : '')+'"></td>'+
         '<td class="n" data-diff="'+esc(p.id)+'">'+(df===null ? '—' : df===0 ? 'مظبوط' : (df>0 ? '+' : '')+fmt(df))+'</td></tr>';
     }).join('');
-    $('#cnt-apply').textContent = pendingCnt ? 'متأكد؟ اضغط تاني' : 'اعتمد الجرد وعدّل المخزن';
+    $('#cnt-apply').textContent = pendingCnt ? 'متأكد؟ اضغط تاني' : (cntLoc==='main' ? 'اعتمد الجرد وعدّل المخزن' : 'اعتمد جرد '+locName(cntLoc)+' وعدّل رصيده');
   }
   function applyCount(){
     if(!ready() || !countDraft) return;
-    var upd = [], lines = [], lossVal = 0;
+    var loc = cntLoc, upd = [], lines = [], lossVal = 0, gain = 0, locUp = [];
     products.forEach(function(p){
       var v = countDraft[p.id];
       if(v===undefined || v==='') return;
-      var df = round(v-p.qty);
+      var cur = locQty(p,loc), df = round(v-cur);
       if(df===0) return;
-      upd.push(Object.assign({},p,{qty:round(v)}));
-      lines.push(p.name+': '+fmt(p.qty)+'←'+fmt(v));
+      if(loc==='main') upd.push(Object.assign({},p,{qty:round(v)})); else locUp.push({p:p,df:df,v:round(v)});
+      lines.push(p.name+': '+fmt(cur)+'←'+fmt(v));
       if(df<0 && p.cost!=null) lossVal += -df*p.cost;
+      if(df>0 && p.cost!=null) gain += df*p.cost;
     });
-    if(!upd.length){ toast('مفيش فروق في الأصناف اللي عدّيتها'); countDraft = null; renderCount(); return; }
-    var cOlds = upd.map(function(p){ return products.get(p.id); });
-    upd.forEach(function(p){ products.set(p.id,p); });
-    logA('count','جرد: '+upd.length+' صنف فيه فرق'+(lossVal ? '، قيمة العجز بسعر الجملة '+money(round(lossVal)) : '')+' — '+lines.slice(0,12).join('، ')+(lines.length>12 ? '…' : ''),{n:upd.length,loss:round(lossVal)});
-    persist(function(){
-      var ch = Promise.resolve();
-      upd.forEach(function(u,i){ ch = ch.then(function(){ return prodWrite(u,cOlds[i]); }); });
-      return ch;
-    });
+    var n = upd.length + locUp.length;
+    if(!n){ toast('مفيش فروق في الأصناف اللي عدّيتها'); countDraft = null; renderCount(); return; }
+    logA('count','جرد '+locName(loc)+': '+n+' صنف فيه فرق'+(lossVal ? '، قيمة العجز بسعر الجملة '+money(round(lossVal)) : '')+(gain ? '، قيمة الزيادة '+money(round(gain)) : '')+' — '+lines.slice(0,12).join('، ')+(lines.length>12 ? '…' : ''),{n:n,loc:loc,loss:round(lossVal),gain:round(gain)});
+    if(loc==='main'){
+      var cOlds = upd.map(function(p){ return products.get(p.id); });
+      upd.forEach(function(p){ products.set(p.id,p); });
+      persist(function(){
+        var ch = Promise.resolve();
+        upd.forEach(function(u,i){ ch = ch.then(function(){ return prodWrite(u,cOlds[i]); }); });
+        return ch;
+      });
+    } else {
+      /* جرد عربية: بنكتب الفرق بس على رصيد العربية دي (stk.<كود>)، من غير ما نلمس الرئيسي ولا أي عربية تانية */
+      locUp.forEach(function(x){ var stk = Object.assign({},x.p.stk||{}); stk[loc] = x.v; products.set(x.p.id,Object.assign({},x.p,{stk:stk})); });
+      persist(function(){ locUp.forEach(function(x){ var d = {}; d['stk.'+loc] = x.df; db.upd('products/'+x.p.id,{},d); }); return Promise.resolve(); });
+    }
     countDraft = null; pendingCnt = false;
-    toast('اتعدّل المخزن حسب الجرد'+(lossVal ? '. العجز '+money(round(lossVal)) : ''));
+    toast('اتعدّل رصيد '+locName(loc)+' حسب الجرد'+(lossVal ? '. العجز '+money(round(lossVal)) : '')+(gain ? '. الزيادة '+money(round(gain)) : ''));
     render();
   }
 
@@ -529,7 +537,7 @@
         toast('اتحذف الكاشير'); renderSec();
         break;
       }
-      case 'cnt-open': if(isOwner()){ countDraft = {}; pendingCnt = false; renderCount(); } break;
+      case 'cnt-open': if(isOwner()){ var cs = $('#cnt-loc'); cntLoc = (cs && !cs.hidden && cs.value) ? cs.value : 'main'; countDraft = {}; pendingCnt = false; renderCount(); } break;
       case 'cnt-cancel': countDraft = null; pendingCnt = false; renderCount(); break;
       case 'cnt-apply': {
         if(!isOwner() || !countDraft) return;

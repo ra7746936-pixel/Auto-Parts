@@ -184,6 +184,9 @@
   $('#cart').addEventListener('focusin',function(e){ var t = e.target; if(t && t.matches && t.matches('[data-qty],[data-price]')){ selNext = t; try{ t.select(); }catch(x){} } });
   /* الماوس بيشيل التحديد بعد الفوكس، فبنحدد تاني أول ضغطة بعد الفوكس */
   $('#cart').addEventListener('click',function(e){ var t = e.target; if(t && t===selNext){ selNext = null; try{ t.select(); }catch(x){} } });
+  /* بعض المتصفحات (خصوصا القديمة) بتشيل التحديد لما الماوس/اللمس يخلص بعد الفوكس. بنمنع ده عشان الرقم يفضل متحدد وأول حرف تكتبه يكتب فوقه */
+  var selUp = function(e){ var t = e.target; if(t && t===selNext && t.matches && t.matches('[data-qty],[data-price]')){ e.preventDefault(); try{ t.select(); }catch(x){} } };
+  $('#cart').addEventListener('mouseup',selUp); $('#cart').addEventListener('touchend',selUp);
   $('#cart').addEventListener('keydown',function(e){
     var t = e.target; if(e.key!=='Enter' || !t || !t.matches || !t.matches('[data-qty],[data-price]')) return;
     e.preventDefault(); t.blur(); focusQ();
@@ -196,6 +199,7 @@
       if(!pp || !canPrice()) return;
       if(!(pv>0)){ delete cartPrice[pid]; toast('السعر لازم يكون أكبر من صفر. رجّعنا السعر الأصلي',true); }
       else if(round(pv)===pp.price) delete cartPrice[pid];
+      else if((pv>=pp.price*5 || pv<=pp.price/5) && !window.confirm('السعر الأصلي '+fmt(pp.price)+' وانت كتبت '+fmt(round(pv))+'. الفرق كبير، ممكن يكون خطأ في الكتابة. تكمل بالسعر الجديد؟')){ delete cartPrice[pid]; }
       else cartPrice[pid] = round(pv);
       renderSell(); return;
     }

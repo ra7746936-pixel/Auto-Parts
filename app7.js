@@ -36,7 +36,7 @@ function renderLocs(){
     var van = cloud && !owner && LOC!=='main', h = '';
     if(van){
       locTransfers.filter(function(t){ return t.status==='pending' && t.to===LOC; }).forEach(function(t){
-        h += '<div class="panel rcv"><strong>وصلك بضاعة من '+esc(locName(t.from))+'</strong><ul class="rcv-l">'+
+        h += '<div class="panel rcv"><strong>وصلك بضاعة من '+esc(locName(t.from))+(t.no ? ' (إذن #'+t.no+')' : '')+'</strong><ul class="rcv-l">'+
           t.lines.map(function(l){ return '<li>'+esc(l.name)+' × '+fmt(l.qty)+'</li>'; }).join('')+'</ul>'+
           '<div class="hint">'+dt(t.ts)+' · الكمية دي اتضافت لرصيد العربية فعلا. اتأكد إنها وصلتك صح وبعدين أكّد.</div>'+
           '<button class="btn primary" type="button" data-rcv="'+esc(t.id)+'">أكدت الاستلام</button></div>';
@@ -49,6 +49,8 @@ function renderLocs(){
   }
   var sn = $('#stk-note');
   if(sn){ var on = cloud && owner && (shopCfg.locs||[]).length>0; sn.hidden = !on; if(on) sn.textContent = 'الأرقام في تبويب المخزن دي هي المخزن الرئيسي بس. رصيد العربيات وتحويل البضاعة في تبويب «المواقع».'; }
+  var cl = $('#cnt-loc');
+  if(cl){ var hasL = cloud && owner && (shopCfg.locs||[]).length>0; cl.hidden = !hasL; if(hasL){ var cv2 = cl.value; cl.innerHTML = locAll().map(function(l){ return '<option value="'+esc(l.id)+'">جرد: '+esc(l.name)+'</option>'; }).join(''); if(cv2) cl.value = cv2; } }
   var il = $('#inv-loc');
   if(il){ var has = cloud && owner && (shopCfg.locs||[]).length>0; il.hidden = !has; if(has){ var cv = il.value; il.innerHTML = '<option value="">كل الأماكن</option>'+locAll().map(function(l){ return '<option value="'+esc(l.id)+'">'+esc(l.name)+'</option>'; }).join(''); il.value = cv; } else il.value = ''; }
   var sel = $('#cc-loc');
@@ -76,11 +78,22 @@ function renderLocs(){
   }).join('') : '<li class="empty"><p>ضيف أصناف للتحويل.</p></li>';
   $('#lc-go').disabled = locPend || !locDraft.length;
   /* سجل التحويلات */
-  $('#lc-log').innerHTML = locTransfers.length ? locTransfers.slice(0,25).map(function(t){
-    return '<li class="item"><div class="item-head"><strong>'+esc(locName(t.from))+' ← '+esc(locName(t.to))+'</strong>'+
+  var tp = ($('#lc-tper')||{}).value||'7', tcut = tp==='all' ? 0 : Date.now()-(+tp)*86400000, tl = locTransfers.filter(function(t){ return t.ts>=tcut; });
+  $('#lc-log').innerHTML = tl.length ? tl.slice(0,60).map(function(t){
+    return '<li class="item"><div class="item-head"><strong>'+(t.no ? 'إذن #'+t.no+' · ' : '')+esc(locName(t.from))+' ← '+esc(locName(t.to))+'</strong>'+
       (t.status==='pending' ? '<span class="chip local">مستني تأكيد الاستلام</span>' : '<span class="chip db">اتأكد'+(t.rcvBy ? ' ('+esc(t.rcvBy.name)+')' : '')+'</span>')+'</div>'+
-      '<div class="meta">'+dt(t.ts)+' · '+t.lines.map(function(l){ return esc(l.name)+' × '+fmt(l.qty); }).join('، ')+'</div></li>';
-  }).join('') : '<li class="empty"><p>مفيش تحويلات لسه.</p></li>';
+      '<div class="meta">'+dt(t.ts)+(t.by ? ' · '+esc(t.by.name) : '')+' · '+t.lines.map(function(l){ return esc(l.name)+' × '+fmt(l.qty); }).join('، ')+'</div></li>';
+  }).join('') : '<li class="empty"><p>مفيش تحويلات في الفترة دي.</p></li>';
+  var tn = 0; tl.forEach(function(t){ t.lines.forEach(function(l){ tn += l.qty; }); }); $('#lc-tsum').textContent = tl.length ? tl.length+' إذن، إجمالي القطع المحوّلة: '+fmt(round(tn)) : '';
+  /* تنبيه نقص: أي صنف اتحوّل لعربية ورصيده فيها قرب يخلص */
+  var lowH = '';
+  (shopCfg.locs||[]).forEach(function(l){
+    var items = [];
+    products.forEach(function(p){ if(!p.svc && p.stk && p.stk[l.id]!==undefined && locQty(p,l.id)<=LOW) items.push(p); });
+    items.sort(byName);
+    if(items.length) lowH += '<li class="item"><div class="item-head"><strong>'+esc(l.name)+'</strong><span class="pill warn">'+fmt(items.length)+' صنف</span></div><div class="meta">'+items.slice(0,25).map(function(p){ var q = locQty(p,l.id); return esc(p.name)+' ('+(q<=0 ? 'خلص' : fmt(q))+')'; }).join('، ')+(items.length>25 ? '…' : '')+'</div></li>';
+  });
+  $('#lc-low').innerHTML = lowH || '<li class="empty"><p>مفيش أصناف قربت تخلص في العربيات.</p></li>';
   /* جدول الأرصدة */
   var sq = ($('#lc-sq').value||'').trim().toLowerCase(), rows = [];
   products.forEach(function(p){ if(!p.svc && (!sq || p.name.toLowerCase().indexOf(sq)>=0)) rows.push(p); });
@@ -122,6 +135,7 @@ $('#lc-add').addEventListener('submit',function(e){
   shopCfg.locs = (shopCfg.locs||[]).concat([{id:id,name:n}]);
   locSave(); logA('cfg','إضافة موقع مخزون: '+n); $('#lc-name').value = ''; locMsg('اتضافت: '+n); render();
 });
+$('#lc-tper').addEventListener('change',renderLocs);
 $('#lc-from').addEventListener('change',function(){ locDraft = []; renderLocs(); });
 $('#lc-to').addEventListener('change',renderLocs);
 $('#lc-q').addEventListener('input',renderLocs);
@@ -147,18 +161,22 @@ $('#lc-go').addEventListener('click',function(){
     if(!p || locDraft[i].qty > locQty(p,f)){ locMsg('الكمية مش كفاية من '+locDraft[i].name+' في '+locName(f),true); return; }
   }
   if(!window.confirm('تحويل '+locDraft.length+' صنف من '+locName(f)+' إلى '+locName(t)+'؟ الرصيد هيتغيّر فورا.')) return;
-  locPend = true;
-  var tr = {id:uid(),ts:Date.now(),from:f,to:t,status:(t==='main' ? 'received' : 'pending'),lines:locDraft.map(function(d){ return {pid:d.pid,name:d.name,qty:d.qty}; }),by:{id:sess.id,name:sess.name}};
-  var lines = tr.lines;
-  persist(function(){
-    lines.forEach(function(l){
-      var d = {}; d[f==='main' ? 'qty' : 'stk.'+f] = -l.qty; d[t==='main' ? 'qty' : 'stk.'+t] = l.qty;
-      db.upd('products/'+l.pid,{},d);
+  locPend = true; $('#lc-go').disabled = true;
+  var lines = locDraft.map(function(d){ return {pid:d.pid,name:d.name,qty:d.qty}; }), floor = 0;
+  locTransfers.forEach(function(t){ if(t.no>floor) floor = t.no; });
+  /* رقم الإذن من عدّاد المحل (محتاج نت). من غير نت مبنحوّلش، عشان مفيش رقمين يتكرروا ومفيش تحويل من رصيد قديم */
+  db.nextNo(floor,'tcounter').then(function(no){
+    var tr = {id:uid(),no:no,ts:Date.now(),from:f,to:t,status:(t==='main' ? 'received' : 'pending'),lines:lines,by:{id:sess.id,name:sess.name}};
+    persist(function(){
+      lines.forEach(function(l){
+        var d = {}; d[f==='main' ? 'qty' : 'stk.'+f] = -l.qty; d[t==='main' ? 'qty' : 'stk.'+t] = l.qty;
+        db.upd('products/'+l.pid,{},d);
+      });
+      return db.doc('transfers/'+tr.id).set(tr);
     });
-    return db.doc('transfers/'+tr.id).set(tr);
-  });
-  logA('cfg','تحويل مخزون من '+locName(f)+' إلى '+locName(t)+': '+lines.map(function(l){ return l.name+' × '+fmt(l.qty); }).join('، '));
-  locTransfers.unshift(tr); locDraft = []; locPend = false; locMsg('اتحوّلت البضاعة. السواق هيأكد الاستلام.'); renderLocs();
+    logA('cfg','إذن تحويل #'+no+' من '+locName(f)+' إلى '+locName(t)+': '+lines.map(function(l){ return l.name+' × '+fmt(l.qty); }).join('، '));
+    locTransfers.unshift(tr); locDraft = []; locPend = false; locMsg('اتحوّلت البضاعة (إذن #'+no+'). السواق هيأكد الاستلام.'); renderLocs();
+  },function(){ locPend = false; locMsg('التحويل محتاج نت عشان رقم الإذن. اتأكد من الاتصال وجرّب تاني.',true); renderLocs(); });
 });
 $('#lc-copy').addEventListener('click',function(){
   try{ navigator.clipboard.writeText(window.locRepText||'').then(function(){ locMsg('اتنسخ التقرير'); },function(){ locMsg('معرفتش أنسخ',true); }); }catch(e){ locMsg('معرفتش أنسخ',true); }

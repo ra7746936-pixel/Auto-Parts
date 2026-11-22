@@ -4,13 +4,13 @@
 
 /* Layout: ثلاث شاشات (بيع / مخزن / تقرير). البيع: قايمة أصناف جنب الفاتورة، وعلى الموبايل الفاتورة فوق. */
 :root{
-  --bg:#F3F4F7;
+  --bg:#F6F4EF;
   --surface:#FFFFFF;
-  --surface2:#E7E9EF;
-  --ink:#1A1D26;
-  --muted:#5B6272;
-  --line:#D5D8E0;
-  --accent:#C2410C;
+  --surface2:#ECE8E0;
+  --ink:#1E2430;
+  --muted:#677083;
+  --line:#DDD8CC;
+  --accent:#24466F;
   --accent-ink:#FFFFFF;
   --ok-bg:#DCEFE0; --ok-ink:#14532D;
   --warn-bg:#FBEBC8; --warn-ink:#7A4B00;
@@ -20,8 +20,8 @@
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#12141A; --surface:#1C2029; --surface2:#262B37; --ink:#ECEEF3; --muted:#A4ABBA; --line:#323847;
-    --accent:#FB923C; --accent-ink:#2A1200;
+    --bg:#13161C; --surface:#1B2029; --surface2:#232A36; --ink:#EAE7E0; --muted:#A3A8B3; --line:#303847;
+    --accent:#D9B26A; --accent-ink:#22190A;
     --ok-bg:#173A24; --ok-ink:#9BE3AE;
     --warn-bg:#3D2E0E; --warn-ink:#F3C772;
     --bad-bg:#42201B; --bad-ink:#F5A89D;
@@ -29,8 +29,8 @@
   }
 }
 :root[data-theme="dark"]{
-  --bg:#12141A; --surface:#1C2029; --surface2:#262B37; --ink:#ECEEF3; --muted:#A4ABBA; --line:#323847;
-  --accent:#FB923C; --accent-ink:#2A1200;
+  --bg:#13161C; --surface:#1B2029; --surface2:#232A36; --ink:#EAE7E0; --muted:#A3A8B3; --line:#303847;
+  --accent:#D9B26A; --accent-ink:#22190A;
   --ok-bg:#173A24; --ok-ink:#9BE3AE;
   --warn-bg:#3D2E0E; --warn-ink:#F3C772;
   --bad-bg:#42201B; --bad-ink:#F5A89D;
@@ -304,7 +304,7 @@ html.authing #app{display:none}
 
 .ctabs{display:flex;gap:6px;overflow-x:auto;margin:0 0 10px;padding-bottom:2px}
 .ctab{display:inline-flex;align-items:stretch;border:1px solid var(--line,#2c3b36);border-radius:10px;background:transparent;flex:0 0 auto}
-.ctab.on{border-color:var(--accent,#3ad29f);background:var(--ok-bg,rgba(58,210,159,.12))}
+.ctab.on{border-color:var(--accent,#3ad29f);background:var(--surface2)}
 .ctab .ct-b{background:none;border:0;color:inherit;font:inherit;font-weight:600;padding:6px 10px;text-align:center;cursor:pointer;min-height:44px}
 .ctab .ct-b small{display:block;font-size:11px;font-weight:400;opacity:.8}
 .ctab .ct-x{background:none;border:0;border-inline-start:1px solid var(--line,#2c3b36);color:inherit;padding:0 10px;cursor:pointer;min-height:44px}

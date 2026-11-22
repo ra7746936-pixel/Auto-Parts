@@ -1,5 +1,5 @@
 /* مخزني: خدمة التشغيل بدون نت. بتمسح نسخ مخزني القديمة بس (mk-)، عشان أي برنامج تاني على نفس الموقع ميتأثرش. الملفات بتتحمّل من النت لو موجود، ولو مفيش بتتفتح من النسخة المحفوظة على الجهاز. */
-var VER = 'pk-v4';
+var VER = 'pk-v8';
 self.addEventListener('install',function(e){ self.skipWaiting(); });
 self.addEventListener('activate',function(e){
   e.waitUntil(caches.keys().then(function(ks){
