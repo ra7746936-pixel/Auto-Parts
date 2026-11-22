@@ -191,7 +191,7 @@ document.addEventListener('keydown',function(e){
 /* ---------- أكتر من فاتورة مفتوحة في نفس الوقت ----------
    كل فاتورة ليها سلتها وسعرها المعدّل والعميل والمدفوع والتوصيل. اللي معروضة هي اللي في cart/cartPrice، والباقي محفوظ هنا ومنفصل تماما.
    البيع بيتم للفاتورة اللي قدامك بس. والفواتير المفتوحة بتتحفظ على الجهاز عشان لو الصفحة اتقفلت أو اتحدثت متضيعش. */
-var CT_KEY = 'makhzani-drafts', CT_MAX = 4, ctSlots = [{}], ctCur = 0, ctBooted = false;
+var CT_KEY = 'qatea-drafts', CT_MAX = 4, ctSlots = [{}], ctCur = 0, ctBooted = false;
 function ctField(id){ var e = document.querySelector(id); return e ? e.value : ''; }
 function ctSnap(){ return {cart:cart,price:cartPrice,cust:ctField('#cust'),paid:ctField('#paid'),fee:ctField('#fee')}; }
 function ctItems(s){ return Object.keys(s.cart||{}).length; }

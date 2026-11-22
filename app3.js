@@ -1,5 +1,5 @@
 /* مخزني - الجزء 3 من 4: الأمان والصلاحيات وسجل العمليات (UTF-8، جنب index.html) */
-  var SEC_KEY = 'makhzani-sec', AUD_KEY = 'makhzani-audit', FAIL_KEY = 'makhzani-fail';
+  var SEC_KEY = 'qatea-sec', AUD_KEY = 'qatea-audit', FAIL_KEY = 'qatea-fail';
   var sec = null, aud = [], audBase = '', audBaseN = 0, sess = null, lastAct = Date.now();
   var approveCb = null, pendingReset = null, auMode = 'login', pendingUserDel = null, userDelTimer = null;
   var countDraft = null, pendingCnt = false, cntTimer = null, audFilter = 'all', audShow = 60, secShown = false;
@@ -129,6 +129,7 @@
   function tabAllowed(v){
     if(!sess) return v==='sell';
     if(v==='sell' || v==='stock') return true;
+    if(v==='loc') return sess.role==='owner' && mode==='cloud';
     return sess.role==='owner';
   }
   function needApproval(kind){
@@ -208,7 +209,7 @@
       $('#au-msg').textContent = 'اختار حسابك واكتب الـ PIN.';
       var opts = '<option value="owner">المالك</option>'+(window.CLOUD_ON ? [] : sec.users).map(function(u){ return '<option value="'+esc(u.id)+'">'+esc(u.name)+'</option>'; }).join('');
       $('#au-user').innerHTML = opts;
-      try{ var lu = localStorage.getItem('makhzani-lastuser'); if(lu){ $('#au-user').value = lu; if($('#au-user').value!==lu) $('#au-user').value = 'owner'; } }catch(e){}
+      try{ var lu = localStorage.getItem('qatea-lastuser'); if(lu){ $('#au-user').value = lu; if($('#au-user').value!==lu) $('#au-user').value = 'owner'; } }catch(e){}
       $('#au-user-wrap').hidden = false; $('#au-pin-wrap').hidden = false; $('#au-forgot').hidden = false;
       $('#au-go').textContent = 'دخول';
     }
@@ -279,7 +280,7 @@
         return;
       }
       noteOk();
-      try{ localStorage.setItem('makhzani-lastuser',who); }catch(e){}
+      try{ localStorage.setItem('qatea-lastuser',who); }catch(e){}
       sess = {role:who==='owner' ? 'owner' : 'cashier',id:who,name:nm};
       logA('login','دخول');
       afterLogin();
@@ -590,7 +591,7 @@
   $('#sc-price').addEventListener('change',function(){
     if(!isOwner()) return;
     shopCfg.cp = $('#sc-price').checked;
-    try{ localStorage.setItem('makhzani-print',JSON.stringify(shopCfg)); }catch(e){}
+    try{ localStorage.setItem('qatea-print',JSON.stringify(shopCfg)); }catch(e){}
     if(mode==='cloud' && db) db.doc('meta/print').set(shopCfg);
     logA('cfg','غيّر إعداد: الكاشير يغيّر السعر وقت البيع = '+(shopCfg.cp ? 'أيوه' : 'لأ')); toast('اتحفظ الإعداد'); render();
   });

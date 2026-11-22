@@ -563,7 +563,7 @@
     var blob = buildExcelBlob(sales), url = URL.createObjectURL(blob), d = new Date();
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'makhzani-excel-'+d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())+'.xlsx';
+    a.download = 'qatea-excel-'+d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())+'.xlsx';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function(){ URL.revokeObjectURL(url); },1000);
     try{ localStorage.setItem(BK_KEY,String(Date.now())); }catch(e){}
@@ -574,7 +574,7 @@
   }
 
   /* ---------- الترخيص ---------- */
-  var LIC_KEY = 'makhzani-license', SEEN_KEY = 'makhzani-seen', DEV_KEY = 'makhzani-device';
+  var LIC_KEY = 'qatea-license', SEEN_KEY = 'qatea-seen', DEV_KEY = 'qatea-device';
 
   function getDeviceId(){
     var id = null;

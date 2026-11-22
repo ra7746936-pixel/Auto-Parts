@@ -42,10 +42,10 @@
   var editSale = null, draft = [], pendingCancelInv = false, cancelInvTimer = null, lastIeOpts = '';
   var editEnt = null, lastRtOpts = '';
   var invSeq = 0;
-  var lastSaleId = null, shopCfg = {name:'',foot:'',w:'80',qr:'',qrt:'',cp:false};
+  var lastSaleId = null, shopCfg = {name:'',foot:'',w:'80',qr:'',qrt:'',cp:false,locs:[]};
 
   /* ---------- حفظ ---------- */
-  var LS_KEY = 'makhzani-v1';
+  var LS_KEY = 'qatea-v1';
   function lsLoad(){
     try{
       var raw = localStorage.getItem(LS_KEY);
@@ -95,9 +95,9 @@
   /* كتابة صنف: في السحابة بنبعت الفرق في الكمية مش الكمية نفسها، عشان بيع جهاز تاني في نفس اللحظة ما يتمسحش */
   function prodWrite(u,old){
     if(mode!=='cloud' || !old) return db.doc('products/'+u.id).set(u);
-    var rest = Object.assign({},u); delete rest.qty; delete rest.sold; delete rest.revenue;
+    var rest = Object.assign({},u); delete rest.qty; delete rest.sold; delete rest.revenue; delete rest.stk; delete rest.mq;
     var d = {}, f = {qty:1,sold:1,revenue:1};
-    Object.keys(f).forEach(function(k){ var x = round((+u[k]||0)-(+old[k]||0)); if(x) d[k] = x; });
+    Object.keys(f).forEach(function(k){ var x = round((+u[k]||0)-(+old[k]||0)); if(x){ d[(k==='qty' && LOC!=='main') ? 'stk.'+LOC : k] = x; } });
     return db.upd('products/'+u.id,rest,d);
   }
   /* كتابة مورد: الحركات الجديدة بتتضاف لوحدها، وأي تعديل أو حذف بيكتب المورد كله */
@@ -145,7 +145,7 @@
     persist(function(){
       if(cloud){
         /* في السحابة المخزون بيتعدّل بالنقص مش بقيمة جديدة، عشان جهازين يبيعوا مع بعض والكمية تطلع صح */
-        sale.lines.forEach(function(l){ db.inc('products/'+l.pid,{qty:-l.qty,sold:l.qty,revenue:round(l.qty*l.price)}); });
+        sale.lines.forEach(function(l){ var dd = {sold:l.qty,revenue:round(l.qty*l.price)}; dd[LOC!=='main' ? 'stk.'+LOC : 'qty'] = -l.qty; db.inc('products/'+l.pid,dd); });
         return db.doc('sales/'+sale.id).set(sale);
       }
       var ch = Promise.resolve();
@@ -239,7 +239,7 @@
     });
   }
   function render(){ if(renderHold){ renderLate = true; return; } keepInputs(renderAll); }
-  function renderAll(){ renderStatus(); renderTabs(); renderSell(); renderStock(); renderSup(); renderCust(); renderInv(); if(typeof renderExp==='function'){ renderExp(); renderLinks(); } renderReport(); renderInvEdit(); renderBackup(); renderMine(); renderSec(); renderRoleUI(); if(typeof renderCloudInfo==='function') renderCloudInfo(); }
+  function renderAll(){ renderStatus(); renderTabs(); if(typeof renderLocs==='function') renderLocs(); renderSell(); renderStock(); renderSup(); renderCust(); renderInv(); if(typeof renderExp==='function'){ renderExp(); renderLinks(); } renderReport(); renderInvEdit(); renderBackup(); renderMine(); renderSec(); renderRoleUI(); if(typeof renderCloudInfo==='function') renderCloudInfo(); }
 
   function renderStatus(){
     var el = $('#sync');
@@ -256,7 +256,7 @@
 
   function renderTabs(){
     if(!tabAllowed(view)) view = 'sell';
-    ['sell','stock','sup','cust','inv','exp','report','sec'].forEach(function(v){
+    ['sell','stock','sup','cust','inv','exp','loc','report','sec'].forEach(function(v){
       $('#v-'+v).hidden = (v!==view);
       $('#t-'+v).setAttribute('aria-selected', v===view ? 'true':'false');
       $('#t-'+v).hidden = !tabAllowed(v);
@@ -385,7 +385,7 @@
     var r = periodRows();
     var rev = 0, pcs = 0, stockVal = 0;
     r.rows.forEach(function(x){ rev += x.rev; pcs += x.sold; });
-    products.forEach(function(p){ if(!p.svc) stockVal += p.qty*p.price; });
+    products.forEach(function(p){ if(!p.svc) stockVal += (typeof totQty==='function' ? totQty(p) : p.qty)*p.price; });
     var pr = profitFor(sales.filter(function(s){ return period==='all' || s.ts>=r.t0; }));
     var owed = 0, custOwed = 0;
     suppliers.forEach(function(s){ var b = supStats(s).bal; if(b>0) owed += b; });

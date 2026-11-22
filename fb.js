@@ -3,18 +3,18 @@
    الفتح من ملف على الجهاز (file://) أو بإضافة ?local للرابط = الوضع المحلي القديم من غير سحابة. */
 (function(){
   var CFG = {
-    apiKey: "AIzaSyBHHvaYyh4Z_lhpD2TNW9D_48eO-IAIyzg",
-    authDomain: "makhzani-16e1e.firebaseapp.com",
-    projectId: "makhzani-16e1e",
-    storageBucket: "makhzani-16e1e.firebasestorage.app",
-    messagingSenderId: "24820958119",
-    appId: "1:24820958119:web:c7f9107875f0694848ec82"
+    apiKey: "AIzaSyAHwzKb29Tg9Ba2VrETUFrPuc5mVvdztDw",
+    authDomain: "auto-parts-e19d1.firebaseapp.com",
+    projectId: "auto-parts-e19d1",
+    storageBucket: "auto-parts-e19d1.firebasestorage.app",
+    messagingSenderId: "275962438391",
+    appId: "1:275962438391:web:ee0976446573e83c93a9f2"
   };
   var SDK_VERSION = '13.2.0';
   window.FB_CONFIG = CFG;
   window.APP_VER = 'v3';
   window.FB_PEND = 0;
-  window.FB_ADMIN_UID = 'dqK2AqfNGIMSlQ6UkWcLPxC32Uh1';
+  window.FB_ADMIN_UID = 'WJHiOYM1OFfeUhqR9JvmMNW38SC2';
 
   function fire(n){ try{ window.dispatchEvent(new Event(n)); }catch(e){} }
 
@@ -47,11 +47,11 @@
     /* Firestore بيرفض أي حقل قيمته undefined (وده كان بيوقف الحفظ كله). بنشيلها قبل الإرسال */
     function clean(d){ return JSON.parse(JSON.stringify(d)); }
     /* عدّاد الكتابات اللي لسه ما وصلتش للسيرفر (بيظهر في شريط الحالة) */
-    function track(p){
+    function track(p,info){
       window.FB_PEND++; fire('fb-pend');
-      p.then(function(){ window.FB_PEND--; fire('fb-pend'); },function(e){ window.FB_PEND--; fire('fb-pend'); onErr(e); });
+      p.then(function(){ window.FB_PEND--; fire('fb-pend'); },function(e){ window.FB_PEND--; fire('fb-pend'); onErr(e,info); });
     }
-    function onErr(e){ try{ if(window.FB_ONERR) window.FB_ONERR(e); }catch(x){} }
+    function onErr(e,info){ try{ if(window.FB_ONERR) window.FB_ONERR(e,info); }catch(x){} }
     window.FB = {
       onUser: function(cb){ return Au.onAuthStateChanged(auth,cb); },
       user: function(){ return auth.currentUser; },
@@ -106,11 +106,11 @@
             var ref = F.doc(fs,root+path);
             return {
               set: function(d){
-                try{ track(F.setDoc(ref,clean(d))); }catch(e){ onErr(e); }
+                try{ track(F.setDoc(ref,clean(d)),'set '+path); }catch(e){ onErr(e); }
                 return Promise.resolve();
               },
               delete: function(){
-                try{ track(F.deleteDoc(ref)); }catch(e){ onErr(e); }
+                try{ track(F.deleteDoc(ref),'delete '+path); }catch(e){ onErr(e); }
                 return Promise.resolve();
               }
             };
@@ -126,7 +126,7 @@
                   window.FB_PEND += n; fire('fb-pend');
                   b.commit().then(function(){ window.FB_PEND -= n; fire('fb-pend'); },function(e){
                     window.FB_PEND -= n; fire('fb-pend');
-                    chunk.forEach(function(d){ try{ track(F.setDoc(F.doc(fs,root+col+'/'+d.id),clean(d))); }catch(x){ onErr(x); } });
+                    chunk.forEach(function(d){ try{ track(F.setDoc(F.doc(fs,root+col+'/'+d.id),clean(d)),'set '+col); }catch(x){ onErr(x); } });
                   });
                 }catch(e){ onErr(e); }
               })(docs.slice(i,i+200));
@@ -144,7 +144,7 @@
                   window.FB_PEND += n; fire('fb-pend');
                   b.commit().then(function(){ window.FB_PEND -= n; fire('fb-pend'); },function(e){
                     window.FB_PEND -= n; fire('fb-pend');
-                    chunk.forEach(function(id){ try{ track(F.deleteDoc(F.doc(fs,root+col+'/'+id))); }catch(x){ onErr(x); } });
+                    chunk.forEach(function(id){ try{ track(F.deleteDoc(F.doc(fs,root+col+'/'+id)),'delete '+col); }catch(x){ onErr(x); } });
                   });
                 }catch(e){ onErr(e); }
               })(ids.slice(i,i+200));
@@ -155,7 +155,7 @@
           inc: function(path,deltas){
             var o = {};
             Object.keys(deltas).forEach(function(k){ o[k] = F.increment(deltas[k]); });
-            try{ track(F.updateDoc(F.doc(fs,root+path),o)); }catch(e){ onErr(e); }
+            try{ track(F.updateDoc(F.doc(fs,root+path),o),'inc '+path); }catch(e){ onErr(e); }
             return Promise.resolve();
           },
           /* تعديل حقول + زيادة/نقص أرقام + إضافة عناصر لمصفوفة، من غير ما نكتب فوق شغل جهاز تاني. بيفشل لو المستند اتمسح */
@@ -164,7 +164,7 @@
               var o = clean(plain||{});
               Object.keys(deltas||{}).forEach(function(k){ o[k] = F.increment(deltas[k]); });
               Object.keys(unions||{}).forEach(function(k){ o[k] = F.arrayUnion.apply(null,clean(unions[k])); });
-              track(F.updateDoc(F.doc(fs,root+path),o));
+              track(F.updateDoc(F.doc(fs,root+path),o),'upd '+path);
             }catch(e){ onErr(e); }
             return Promise.resolve();
           },

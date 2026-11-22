@@ -8,6 +8,7 @@
   function openInvEdit(sid){
     var s = findSale(sid);
     if(!s) return;
+    if(s.loc && s.loc!==LOC){ toast('الفاتورة دي اتباعت من عربية ('+locName(s.loc)+'). المرتجع والتعديل بيتعملوا من حساب السواق بتاع العربية دي عشان المخزون يرجع لمكانه الصح.',true); return; }
     editSale = sid; pendingCancelInv = false; $('#ie-fee').value = s.fee>0 ? s.fee : '';
     draft = s.lines.map(function(l){ return {pid:l.pid,name:l.name,price:l.price,cost:(l.cost==null?null:l.cost),pack:(l.pack>1?l.pack:0),qty:l.qty,orig:l.qty}; });
     render();
@@ -310,15 +311,15 @@
 
   /* ---------- الطباعة ---------- */
   function loadShopCfg(){
-    try{ var r = localStorage.getItem('makhzani-print'); if(r) shopCfg = Object.assign(shopCfg,JSON.parse(r)); }catch(e){}
+    try{ var r = localStorage.getItem('qatea-print'); if(r) shopCfg = Object.assign(shopCfg,JSON.parse(r)); }catch(e){}
     $('#ps-name').value = shopCfg.name||''; $('#ps-foot').value = shopCfg.foot||''; $('#ps-w').value = shopCfg.w==='58' ? '58' : '80'; $('#ps-qr').value = shopCfg.qr||''; $('#ps-qrt').value = shopCfg.qrt||'';
   }
   function saveShopCfg(){
     var qr = $('#ps-qr').value.trim();
     if(qr && !/^[a-z][a-z0-9+.-]*:/i.test(qr)) qr = 'https://'+qr.replace(/^\/+/,'');
     if(qr && (!/^https?:\/\/[^\s]+\.[^\s]+$/i.test(qr) || !qrSvg(qr))){ toast(qrSvg(qr)==='' && qr.length>150 ? 'اللينك طويل أوي للكيو ار كود' : 'اللينك مش مظبوط، اكتبه زي facebook.com/اسم-الصفحة',true); qr = ''; $('#ps-qr').value = ''; }
-    shopCfg = {name:$('#ps-name').value.trim(),foot:$('#ps-foot').value.trim(),w:$('#ps-w').value==='58' ? '58' : '80',qr:qr,qrt:$('#ps-qrt').value.trim(),cp:shopCfg.cp===true};
-    try{ localStorage.setItem('makhzani-print',JSON.stringify(shopCfg)); }catch(e){}
+    shopCfg = {name:$('#ps-name').value.trim(),foot:$('#ps-foot').value.trim(),w:$('#ps-w').value==='58' ? '58' : '80',qr:qr,qrt:$('#ps-qrt').value.trim(),cp:shopCfg.cp===true,locs:shopCfg.locs||[]};
+    try{ localStorage.setItem('qatea-print',JSON.stringify(shopCfg)); }catch(e){}
     if(mode==='cloud' && db) db.doc('meta/print').set(shopCfg);
     toast('اتحفظت بيانات الفاتورة');
   }
@@ -336,7 +337,7 @@
     }).join('');
     var cnt = s.lines.length;
     var kv = function(k,v,cls){ return '<div class="rc-kv'+(cls?' '+cls:'')+'"><span>'+k+'</span><strong>'+v+'</strong></div>'; };
-    return '<div class="rc-sec rc-head"><div class="rc-shop">'+esc(shopCfg.name||(typeof cloudInfo!=='undefined' && cloudInfo && cloudInfo.name)||'مخزني')+'</div></div>'+
+    return '<div class="rc-sec rc-head"><div class="rc-shop">'+esc(shopCfg.name||(typeof cloudInfo!=='undefined' && cloudInfo && cloudInfo.name)||'Auto Parts')+'</div></div>'+
       '<div class="rc-sec rc-info">'+
         kv('رقم الفاتورة',esc(invCode(s)))+
         kv('التاريخ',dt(s.ts))+
@@ -409,7 +410,7 @@
     var url = URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));
     var d = new Date(), a = document.createElement('a');
     a.href = url;
-    a.download = 'makhzani-'+name+'-'+d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())+'.csv';
+    a.download = 'qatea-'+name+'-'+d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())+'.csv';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function(){ URL.revokeObjectURL(url); },1000);
     toast('اتحمّل الملف. افتحه بـ Excel');
@@ -478,6 +479,7 @@
     $('#cust').value = ''; if($('#cust-q')) $('#cust-q').value = ''; if(typeof renderCustSel==='function') renderCustSel();
     $('#fee').value = '';
     if(sess) sale.by = {id:sess.id,name:sess.name};
+    if(mode==='cloud' && LOC!=='main') sale.loc = LOC;
     cart = {}; cartPrice = {};
     if(typeof cartsAfterSale==='function') cartsAfterSale();
     if(mode==='cloud'){
@@ -544,7 +546,7 @@
   }
 
   /* ---------- نسخة احتياطية ---------- */
-  var BK_KEY = 'makhzani-lastbackup';
+  var BK_KEY = 'qatea-lastbackup';
   var pendingRestore = null;
   var pad2 = function(n){ n = String(n); return n.length<2 ? '0'+n : n; };
 
@@ -585,7 +587,7 @@
     var d = new Date();
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'makhzani-backup-'+d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())+'.makhzani';
+    a.download = 'qatea-backup-'+d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())+'.makhzani';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function(){ URL.revokeObjectURL(url); },1000);
     try{ localStorage.setItem(BK_KEY,String(Date.now())); }catch(e){}

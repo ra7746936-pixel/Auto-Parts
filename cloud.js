@@ -1,10 +1,11 @@
-window.APP_VER = 'v36';
+window.APP_VER = 'p3';
 /* رقم الدعم: بيتاخد من CONTACT_TEXT اللي في index.html */
 function cloudSup(){ var m = String(window.CONTACT_TEXT||'').match(/\d{8,}/); return m ? ': '+m[0] : ''; }
 /* مخزني — حساب المحل والاشتراك من السحابة (المرحلة 1).
    الدخول بإيميل وباسورد مرة واحدة على الجهاز، والاشتراك بيتقرا من السيرفر ويتجدد من لوحة الإدارة. */
-var CLOUD_KEY = 'makhzani-cloud';
+var CLOUD_KEY = 'qatea-cloud';
 var CLOUD_STALE_MS = 7*86400000;
+var LOC = 'main';
 var cloudInfo = null, cloudInited = false, cloudDone = false;
 
 function cloudLoadCache(){
@@ -40,11 +41,11 @@ function cloudErrMsg(e){
 }
 /* كل محل مفصول: أي حاجة محفوظة على الجهاز (بيانات فاتورة، PIN، كاشيرين، سجل أمان) بتتمسح لو آخر محل دخل الجهاز ده مش نفس المحل.
    من غير كده محل تاني على نفس الجهاز كان ممكن يشوف اسم المحل القديم على الفاتورة، أو كاشيرين المحل القديم يتنقلوا لمحله. بيرجّع true لو عمل إعادة تحميل. */
-var SHOP_MARK = 'makhzani-shop', SHOP_KEYS = ['makhzani-print','makhzani-drafts','makhzani-sec','makhzani-audit','makhzani-fail','makhzani-lastuser','makhzani-lastbackup','makhzani-sec-migrated','makhzani-aud-migrated','makhzani-migrated'];
+var SHOP_MARK = 'qatea-shop', SHOP_KEYS = ['qatea-print','qatea-drafts','qatea-sec','qatea-audit','qatea-fail','qatea-lastuser','qatea-lastbackup','qatea-sec-migrated','qatea-aud-migrated','qatea-migrated'];
 function cloudIsolate(shopId){
   var mark = null; try{ mark = localStorage.getItem(SHOP_MARK); }catch(e){ return false; }
   if(mark===shopId) return false;
-  var tries = 0; try{ tries = +sessionStorage.getItem('makhzani-iso') || 0; sessionStorage.setItem('makhzani-iso',String(tries+1)); }catch(e){}
+  var tries = 0; try{ tries = +sessionStorage.getItem('qatea-iso') || 0; sessionStorage.setItem('qatea-iso',String(tries+1)); }catch(e){}
   if(tries>=2) return false;
   try{
     SHOP_KEYS.forEach(function(k){ localStorage.removeItem(k); });
@@ -76,7 +77,7 @@ function cloudVerify(u){
     if(us.disabled===true) return {err:'disabled'};
     return FB.get('shops/'+us.shopId).then(function(sh){
       if(!sh) return {err:'noshop'};
-      return {info:{uid:u.uid,email:u.email,shopId:us.shopId,name:sh.name||'',exp:+sh.expiresAt||0,status:sh.status||'active',checked:Date.now(),role:us.role||'owner',uname:us.name||''}};
+      return {info:{uid:u.uid,email:u.email,shopId:us.shopId,name:sh.name||'',exp:+sh.expiresAt||0,status:sh.status||'active',checked:Date.now(),role:us.role||'owner',uname:us.name||'',loc:us.loc||'main'}};
     });
   }).then(function(r){
     if(r.err==='disabled'){ cloudShow('blocked','الحساب موقوف','المالك أوقف الحساب ده. كلّمه.'); return; }
@@ -125,7 +126,7 @@ function cloudReauth(pw){
   return FB.reauth(pw);
 }
 /* ---------- بيانات المحل في السحابة ---------- */
-var cloudStarted = false, cloudGot = {p:false,s:false,u:false}, MIG_KEY = 'makhzani-migrated', cloudErrAt = 0;
+var cloudStarted = false, cloudGot = {p:false,s:false,u:false}, MIG_KEY = 'qatea-migrated', cloudErrAt = 0;
 function cloudDataStart(shopId){
   if(cloudStarted) return true;
   if(!window.FB || !FB.shopDb){
@@ -134,6 +135,7 @@ function cloudDataStart(shopId){
   }
   cloudStarted = true;
   var cashier = !!(cloudInfo && cloudInfo.role==='cashier');
+  LOC = (cashier && cloudInfo.loc) || 'main';
   db = FB.shopDb(shopId);
   mode = 'pending';
   products = new Map(); sales = []; suppliers = new Map(); customers = new Map(); expenses = new Map();
@@ -149,7 +151,7 @@ function cloudDataStart(shopId){
   };
   db.collection('products').onSnapshot(function(snap){
     var m = new Map();
-    snap.docs.forEach(function(d){ var v = d.data(); if(v) m.set(d.id,Object.assign({},v,{id:d.id})); });
+    snap.docs.forEach(function(d){ var v = d.data(); if(v){ v = Object.assign({},v,{id:d.id}); if(LOC!=='main'){ v.mq = v.qty; v.qty = +(v.stk && v.stk[LOC]) || 0; } m.set(d.id,v); } });
     products = m; cloudMeta('p',snap); got('p');
   },fail);
   db.collection('sales').where('ts','>=',Date.now()-CLOUD_DAYS*86400000).orderBy('ts','desc').limit(1500).onSnapshot(function(snap){
@@ -164,13 +166,14 @@ function cloudDataStart(shopId){
     snap.docs.forEach(function(d){ var v = d.data(); if(v) m.set(d.id,Object.assign({},v,{id:d.id})); });
     customers = m; render();
   },function(){});
+  if(typeof locStart==='function') locStart(cashier);
   if(cashier){
     /* الكاشير: مفيش موردين ولا سجل أمان ولا إعدادات حماية. بيقرا بيانات الفاتورة المطبوعة بس */
     cloudGot.u = true; cloudGot.m = true;
     sec = {v:1,owner:null,users:[],cfg:{pinInv:true,pinStock:true,autoLock:0,phone:''},used:[]};
     db.watch('meta/print',function(s){
       var pc = s.exists() ? s.data() : null;
-      shopCfg = pc ? {name:pc.name||'',foot:pc.foot||'',w:pc.w==='58' ? '58' : '80',qr:pc.qr||'',qrt:pc.qrt||'',cp:pc.cp===true} : {name:'',foot:'',w:'80',qr:'',qrt:'',cp:false};
+      shopCfg = pc ? {name:pc.name||'',foot:pc.foot||'',w:pc.w==='58' ? '58' : '80',qr:pc.qr||'',qrt:pc.qrt||'',cp:pc.cp===true,locs:Array.isArray(pc.locs)?pc.locs:[]} : {name:'',foot:'',w:'80',qr:'',qrt:'',cp:false,locs:[]};
       render();
     },function(){});
   } else {
@@ -196,7 +199,7 @@ function cloudDataStart(shopId){
     snap.docs.forEach(function(d){
       if(d.id==='sec'){ try{ cd = JSON.parse(d.data().data); }catch(e){} }
       if(d.id==='backup'){ cloudLastBackup = +d.data().ts || 0; try{ renderBackup(); }catch(e){} }
-      if(d.id==='print'){ var pc = d.data(); shopCfg = {name:pc.name||'',foot:pc.foot||'',w:pc.w==='58' ? '58' : '80',qr:pc.qr||'',qrt:pc.qrt||'',cp:pc.cp===true}; cloudPrintFill(); }
+      if(d.id==='print'){ var pc = d.data(); shopCfg = {name:pc.name||'',foot:pc.foot||'',w:pc.w==='58' ? '58' : '80',qr:pc.qr||'',qrt:pc.qrt||'',cp:pc.cp===true,locs:Array.isArray(pc.locs)?pc.locs:[]}; cloudPrintFill(); if(typeof renderLocs==='function') render(); }
     });
     cloudSecSync(cd,shopId,!fc);
     if(!metaOk && (!fc || cd)){ metaOk = true; clearTimeout(metaTimer); got('m'); }
@@ -227,7 +230,7 @@ function cloudDataStart(shopId){
 }
 /* مرة واحدة: سجل الأمان القديم المحفوظ على الجهاز بيترفع للسحابة (بنفس المعرّفات فمفيش تكرار) */
 function cloudSecSync(cd,shopId,confirmed){
-  var flag = 'makhzani-sec-migrated', done = false, loc = sec;
+  var flag = 'qatea-sec-migrated', done = false, loc = sec;
   try{ done = localStorage.getItem(flag)===shopId; }catch(e){}
   var mark = function(){ try{ localStorage.setItem(flag,shopId); }catch(e){} };
   if(!cd){
@@ -259,7 +262,7 @@ function cloudPrintFill(){
 }
 /* ---- رقم الجهاز + ترقيم فواتير الأوفلاين ---- */
 function cloudDevId(){
-  var k = 'makhzani-dev2', v = null;
+  var k = 'qatea-dev2', v = null;
   try{ v = localStorage.getItem(k); if(!v){ v = Math.random().toString(36).slice(2,10); localStorage.setItem(k,v); } }catch(e){}
   return v || 'x';
 }
@@ -307,9 +310,9 @@ function cloudAuditMigrate(shopId){
   return;
   if(cloudAudDone) return; cloudAudDone = true;
   try{
-    var flag = 'makhzani-aud-migrated', key = localStorage.getItem(flag);
+    var flag = 'qatea-aud-migrated', key = localStorage.getItem(flag);
     if(key===shopId) return;
-    var r = localStorage.getItem('makhzani-audit'), o = r ? JSON.parse(r) : null, list = (o && o.list) || [];
+    var r = localStorage.getItem('qatea-audit'), o = r ? JSON.parse(r) : null, list = (o && o.list) || [];
     list.forEach(function(e){
       var c = {ts:e.ts,who:e.who,role:e.role||'',act:e.act,txt:e.txt};
       if(e.x!=null) c.x = e.x;
@@ -337,7 +340,7 @@ function cloudRestoreWrite(d,old){
 }
 function cloudLocalData(){
   try{
-    var raw = localStorage.getItem('makhzani-v1'); if(!raw) return null;
+    var raw = localStorage.getItem('qatea-v1'); if(!raw) return null;
     var d = JSON.parse(raw);
     var r = {products:d.products||[],sales:d.sales||[],suppliers:d.suppliers||[],seq:+d.seq||0};
     return (r.products.length || r.sales.length || r.suppliers.length) ? r : null;
@@ -434,7 +437,7 @@ window.addEventListener('fb-pend',function(){ if(typeof renderStatus==='function
 /* تشغيل بدون نت: خدمة التخزين على الجهاز (بتشتغل على https بس) */
 try{
   if('serviceWorker' in navigator && location.protocol.indexOf('http')===0){
-    window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js?v=36').catch(function(){}); });
+    window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js?v=p3').catch(function(){}); });
     /* لما تنزل نسخة جديدة: البرنامج بيعيد تحميل نفسه لوحده لو مفيش فاتورة مفتوحة، ولو فيه بيقولك تفتحه تاني بعد الفاتورة */
     var hadCtl = !!navigator.serviceWorker.controller, reloaded = false;
     navigator.serviceWorker.addEventListener('controllerchange',function(){
@@ -463,7 +466,7 @@ function renderCloudCashiers(){
   var l = cloudCashiers.slice().sort(function(a,b){ return (a.createdAt||0)-(b.createdAt||0); });
   $('#cc-list').innerHTML = l.length ? l.map(function(u){
     return '<li class="item"><div class="item-head"><strong>'+esc(u.name)+'</strong>'+(u.disabled ? '<span class="chip local">موقوف</span>' : '<span class="chip db">شغال</span>')+'</div>'+
-      '<div class="meta">اسم الدخول: <b dir="ltr">'+esc(u.username)+'</b></div>'+
+      '<div class="meta">اسم الدخول: <b dir="ltr">'+esc(u.username)+'</b>'+(u.loc && u.loc!=='main' ? ' · الموقع: <b>'+esc(locName(u.loc))+'</b>' : '')+'</div>'+
       '<div class="actions"><button class="btn" type="button" data-cc="'+esc(u.id)+'">'+(u.disabled ? 'فعّل' : 'وقّف')+'</button></div></li>';
   }).join('') : '<li class="empty"><p>لسه مفيش كاشيرين. ضيف أول كاشير من تحت.</p></li>';
 }
@@ -479,6 +482,7 @@ $('#cc-form').addEventListener('submit',function(e){
   btn.disabled = true;
   FB.createUser(email,pw).then(function(uid){
     var prof = {shopId:cloudInfo.shopId,role:'cashier',name:name,username:login,email:email,disabled:false,createdAt:Date.now()};
+    var lsel = $('#cc-loc'); if(lsel && lsel.value && lsel.value!=='main') prof.loc = lsel.value;
     return FB.set('users/'+uid,prof).then(function(){
       return FB.set('shops/'+cloudInfo.shopId+'/staff/'+uid,{name:name,username:login,disabled:false,createdAt:prof.createdAt});
     }).then(function(){
@@ -502,7 +506,7 @@ $('#cc-list').addEventListener('click',function(e){
     function(err){ toast('معرفتش أغيّر الحساب ('+((err&&err.code)||'؟')+')',true); });
 });
 
-/* ---------- رفع نسخة احتياطية على جوجل درايف (دريف المالك نفسه، فولدر «نسخ مخزني») ---------- */
+/* ---------- رفع نسخة احتياطية على جوجل درايف (دريف المالك نفسه، فولدر «نسخ Auto Parts») ---------- */
 var driveTok = null, driveTokExp = 0;
 function driveMsg(t,bad){ var m = $('#b-drive-msg'); if(!m) return; m.hidden = !t; m.textContent = t||''; m.style.color = bad ? 'var(--bad-ink)' : ''; }
 function driveLoadGis(cb){
@@ -528,10 +532,10 @@ function driveApi(tok,url,opt){
   return fetch(url,opt).then(function(r){ return r.json().then(function(j){ if(!r.ok){ var e = new Error('drive'); e.status = r.status; e.body = j; throw e; } return j; }); });
 }
 function driveFolder(tok){
-  var q = encodeURIComponent("name='نسخ مخزني' and mimeType='application/vnd.google-apps.folder' and trashed=false");
+  var q = encodeURIComponent("name='نسخ Auto Parts' and mimeType='application/vnd.google-apps.folder' and trashed=false");
   return driveApi(tok,'https://www.googleapis.com/drive/v3/files?q='+q+'&fields=files(id)&spaces=drive').then(function(j){
     if(j.files && j.files.length) return j.files[0].id;
-    return driveApi(tok,'https://www.googleapis.com/drive/v3/files?fields=id',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'نسخ مخزني',mimeType:'application/vnd.google-apps.folder'})}).then(function(f){ return f.id; });
+    return driveApi(tok,'https://www.googleapis.com/drive/v3/files?fields=id',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'نسخ Auto Parts',mimeType:'application/vnd.google-apps.folder'})}).then(function(f){ return f.id; });
   });
 }
 function driveMultipart(tok,fid,name,mime,content){
@@ -542,7 +546,7 @@ function driveMultipart(tok,fid,name,mime,content){
 function driveUpload(tok,data,xlsx){
   var d = new Date(), p2 = function(n){ return (n<10?'0':'')+n; };
   var stamp = d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())+'-'+p2(d.getHours())+p2(d.getMinutes());
-  var name = 'makhzani-backup-'+stamp+'.makhzani', xname = 'makhzani-excel-'+stamp+'.xlsx';
+  var name = 'qatea-backup-'+stamp+'.makhzani', xname = 'qatea-excel-'+stamp+'.xlsx';
   return driveFolder(tok).then(function(fid){
     return driveMultipart(tok,fid,name,'application/json',JSON.stringify(data)).then(function(f){
       if(!xlsx) return f.name || name;
@@ -563,7 +567,7 @@ $('#b-drive').addEventListener('click',function(){
         if(!data){ btn.disabled = false; return; }
         driveMsg('برفع على درايف…');
         driveUpload(tok,data,xlsx).then(function(nm){
-          mkBackupDone('جوجل درايف'); driveMsg('اترفع ملفين في فولدر «نسخ مخزني» على درايف بتاعك: ملف Excel تقدر تفتحه وتقراه، وملف .makhzani للاسترجاع بس. ('+nm+')'); toast('اترفعت النسخة على جوجل درايف');
+          mkBackupDone('جوجل درايف'); driveMsg('اترفع ملفين في فولدر «نسخ Auto Parts» على درايف بتاعك: ملف Excel تقدر تفتحه وتقراه، وملف .makhzani للاسترجاع بس. ('+nm+')'); toast('اترفعت النسخة على جوجل درايف');
         }).then(null,function(err){
           if(err && err.status===401){ driveTok = null; driveMsg('انتهت صلاحية الدخول. دوس تاني.',true); }
           else if(err && err.status===403){ driveMsg('جوجل رفضت. اتأكد إن Drive API متفعلة وإنك وافقت على الصلاحية.',true); }

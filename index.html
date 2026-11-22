@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>مخزني</title>
+<title>Auto Parts</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0E6B55">
+<meta name="theme-color" content="#C2410C">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Reem+Kufi:wght@500;700&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="style.css?v=36">
+<link rel="stylesheet" href="style.css?v=p3">
 <script>
 /* ===== إعدادات الترخيص: للنسخة اللي بتبعتها للعملاء بس ===== */
 var LICENSE_PUBLIC_KEY = '';
@@ -25,7 +25,7 @@ setTimeout(function(){
     var d=document.createElement('div');
     d.style.cssText='background:#8F2A1F;color:#fff;padding:12px;margin:8px;border-radius:8px;font-size:14px';
     var v=(navigator.userAgent.match(/Chrome\/(\d+)/)||[])[1];
-    d.textContent='البرنامج مش شغال. تأكد إن كل الملفات (index.html و style.css و fb.js و app1.js و app2.js و app3.js و cloud.js و app4.js و app5.js و app6.js و qr.js) في نفس الفولدر واتنسخوا كاملين، وابعت الشريط ده لـ Claude. '+(window.__err?'(الخطأ: '+window.__err+') ':'')+'(Chrome '+(v||'مش معروف')+')';
+    d.textContent='البرنامج مش شغال. تأكد إن كل الملفات (index.html و style.css و fb.js و app1.js و app2.js و app3.js و cloud.js و app4.js و app5.js و app6.js و app7.js و qr.js) في نفس الفولدر واتنسخوا كاملين، وابعت الشريط ده لـ Claude. '+(window.__err?'(الخطأ: '+window.__err+') ':'')+'(Chrome '+(v||'مش معروف')+')';
     document.body.insertBefore(d,document.body.firstChild);
   }
 },15000);
@@ -35,7 +35,7 @@ setTimeout(function(){
 <div class="wrap" id="app" dir="rtl" lang="ar">
   <header class="top">
     <div class="brand">
-      <h1>مخزني</h1>
+      <h1>Auto Parts</h1>
       <div class="brand-r"><span id="who" class="chip who"></span><button id="lock-now" class="btn ghost sm" type="button" data-act="logout" hidden>قفل</button><span id="sync" class="chip">بيحمّل…</span></div>
     </div>
     <nav class="tabs" role="tablist" aria-label="الشاشات">
@@ -45,6 +45,7 @@ setTimeout(function(){
       <button class="tab" role="tab" data-tab="cust" id="t-cust">العملاء</button>
       <button class="tab" role="tab" data-tab="inv" id="t-inv">الفواتير</button>
       <button class="tab" role="tab" data-tab="exp" id="t-exp">المصروفات</button>
+      <button class="tab" role="tab" data-tab="loc" id="t-loc" hidden>المواقع</button>
       <button class="tab" role="tab" data-tab="report" id="t-report">التقرير</button>
       <button class="tab" role="tab" data-tab="sec" id="t-sec" hidden>الأمان</button>
     </nav>
@@ -74,6 +75,7 @@ setTimeout(function(){
       </div>
 
     <section id="v-sell" aria-labelledby="t-sell">
+      <div id="rcv-box" hidden></div>
       <div class="sell-grid">
         <div class="panel">
           <h2>الأصناف</h2>
@@ -111,6 +113,7 @@ setTimeout(function(){
     </section>
 
     <section id="v-stock" aria-labelledby="t-stock" hidden>
+      <p class="hint" id="stk-note" hidden></p>
       <div class="panel">
         <h2 id="f-title">إضافة صنف</h2>
         <form id="pform" class="pform" autocomplete="off">
@@ -496,6 +499,50 @@ setTimeout(function(){
       </div>
     </section>
 
+    <section id="v-loc" aria-labelledby="t-loc" hidden>
+      <div class="panel">
+        <h2>المواقع (عربيات / مخازن)</h2>
+        <p class="hint">المخزن الرئيسي موجود دايما. ضيف كل عربية أو مخزن تاني هنا، وبعدين اعمل لكل سواق حساب كاشير واختار له عربيته من تبويب «الأمان».</p>
+        <ul id="lc-list" class="slist"></ul>
+        <form id="lc-add" class="pform" autocomplete="off">
+          <div><label for="lc-name">اسم العربية أو المخزن</label><input id="lc-name" type="text" placeholder="مثلا: عربية أحمد"></div>
+          <div class="actions"><button class="btn primary" type="submit">ضيف</button></div>
+        </form>
+        <p class="hint" id="lc-msg" hidden></p>
+      </div>
+      <div class="panel">
+        <h2>تحويل بضاعة</h2>
+        <p class="hint">الرصيد بيتغيّر فورا. وبعدها السواق بيدوس «أكدت الاستلام» على تابلته.</p>
+        <div class="pform">
+          <div><label for="lc-from">من</label><select id="lc-from"></select></div>
+          <div><label for="lc-to">إلى</label><select id="lc-to"></select></div>
+          <div class="wide"><label for="lc-q">دوّر على صنف</label><input id="lc-q" type="search" placeholder="اسم أو باركود"></div>
+          <div class="wide"><label for="lc-p">الصنف</label><select id="lc-p"></select></div>
+          <div><label for="lc-n">الكمية</label><input id="lc-n" type="number" inputmode="decimal" min="0" step="any"></div>
+          <div class="actions"><button class="btn" id="lc-addl" type="button">ضيف للتحويل</button></div>
+        </div>
+        <ul id="lc-draft" class="slist"></ul>
+        <div class="actions"><button class="btn primary" id="lc-go" type="button" disabled>نفّذ التحويل</button></div>
+      </div>
+      <div class="panel">
+        <h2>آخر التحويلات</h2>
+        <ul id="lc-log" class="slist"></ul>
+      </div>
+      <div class="panel">
+        <h2>تقرير اليوم لكل موقع</h2>
+        <div class="pform"><div><label for="lc-day">اليوم</label><input id="lc-day" type="date"></div>
+        <div class="actions"><button class="btn" id="lc-copy" type="button">انسخ التقرير (للواتساب)</button></div></div>
+        <p class="hint">التقرير من آخر 45 يوم فواتير. الفواتير الأقدم مش بتظهر هنا.</p>
+        <ul id="lc-rep" class="slist"></ul>
+      </div>
+      <div class="panel">
+        <h2>الأرصدة في كل مكان</h2>
+        <input id="lc-sq" type="search" placeholder="دوّر على صنف">
+        <div class="tbl-wrap"><table id="lc-stock"></table></div>
+        <p class="hint" id="lc-more" hidden>أول 80 صنف. استخدم البحث للباقي.</p>
+      </div>
+    </section>
+
     <section id="v-report" aria-labelledby="t-report" hidden>
       <div class="seg" role="group" aria-label="الفترة">
         <button type="button" data-period="today" aria-pressed="true">النهارده</button>
@@ -558,6 +605,7 @@ setTimeout(function(){
         <form id="cc-form" class="pform" autocomplete="off">
           <div><label for="cc-name">اسم الكاشير</label><input id="cc-name" type="text" placeholder="مثلا: أحمد"></div>
           <div><label for="cc-user">اسم الدخول (إنجليزي)</label><input id="cc-user" type="text" dir="ltr" placeholder="ahmed" autocapitalize="none"></div>
+          <div><label for="cc-loc">بيشتغل فين؟</label><select id="cc-loc"><option value="main">المخزن الرئيسي</option></select></div>
           <div><label for="cc-pass">كلمة السر (6 على الأقل)</label><input id="cc-pass" type="password" autocomplete="new-password"></div>
           <div class="actions"><button class="btn primary" id="cc-go" type="submit">ضيف كاشير</button></div>
         </form>
@@ -634,7 +682,7 @@ setTimeout(function(){
 
 <div id="cloud" class="lock" dir="rtl" hidden>
   <div class="panel lock-card">
-    <h1>مخزني</h1>
+    <h1>Auto Parts</h1>
     <h2 id="cd-title">بيتصل…</h2>
     <p class="hint" id="cd-msg"></p>
     <div id="cd-form" hidden>
@@ -654,7 +702,7 @@ setTimeout(function(){
 
 <div id="lock" class="lock" dir="rtl" hidden>
   <div class="panel lock-card">
-    <h1>مخزني</h1>
+    <h1>Auto Parts</h1>
     <h2 id="lock-title">التطبيق محتاج تفعيل</h2>
     <p class="hint" id="lock-msg"></p>
     <div>
@@ -677,7 +725,7 @@ setTimeout(function(){
 
 <div id="auth" class="lock" dir="rtl" hidden>
   <div class="panel lock-card">
-    <h1>مخزني</h1>
+    <h1>Auto Parts</h1>
     <h2 id="au-title">تسجيل الدخول</h2>
     <p class="hint" id="au-msg"></p>
     <div id="au-user-wrap"><label for="au-user">الحساب</label><select id="au-user"></select></div>
@@ -714,14 +762,15 @@ setTimeout(function(){
   </div>
 </div>
 
-<script src="fb.js?v=36" charset="utf-8"></script>
-<script src="app1.js?v=36" charset="utf-8"></script>
-<script src="app2.js?v=36" charset="utf-8"></script>
-<script src="app3.js?v=36" charset="utf-8"></script>
-<script src="cloud.js?v=36" charset="utf-8"></script>
-<script src="app4.js?v=36" charset="utf-8"></script>
-<script src="qr.js?v=36" charset="utf-8"></script>
-<script src="app6.js?v=36" charset="utf-8"></script>
-<script src="app5.js?v=36" charset="utf-8"></script>
+<script src="fb.js?v=p3" charset="utf-8"></script>
+<script src="app1.js?v=p3" charset="utf-8"></script>
+<script src="app2.js?v=p3" charset="utf-8"></script>
+<script src="app3.js?v=p3" charset="utf-8"></script>
+<script src="cloud.js?v=p3" charset="utf-8"></script>
+<script src="app4.js?v=p3" charset="utf-8"></script>
+<script src="qr.js?v=p3" charset="utf-8"></script>
+<script src="app6.js?v=p3" charset="utf-8"></script>
+<script src="app7.js?v=p3" charset="utf-8"></script>
+<script src="app5.js?v=p3" charset="utf-8"></script>
 </body>
 </html>

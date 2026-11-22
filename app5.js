@@ -221,7 +221,7 @@ $('#wipe-go').addEventListener('click',function(){
 $('#imp-tpl').addEventListener('click',function(){
   var rows = [['اسم الصنف','سعر البيع','سعر الجملة','الكمية','الباركود','عدد القطع في الكرتونة','الوحدة'],['مياه 600 مل',5,3.5,48,'6221234567890',12,'قطعة'],['سلك كهربا 2.5',18,14,200,'',0,'متر']];
   var blob = xlsxFromSheets([['الأصناف',rows,[28,12,12,10,18,22,10]]]), url = URL.createObjectURL(blob), a = document.createElement('a');
-  a.href = url; a.download = 'makhzani-items-template.xlsx'; document.body.appendChild(a); a.click(); a.remove();
+  a.href = url; a.download = 'qatea-items-template.xlsx'; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(function(){ URL.revokeObjectURL(url); },1000);
 });
 $('#imp-go').addEventListener('click',function(){
@@ -413,7 +413,7 @@ function pInit(k){
   pel(k,'tpl').addEventListener('click',function(){
     var rows = [['الاسم','التليفون','العنوان','المبلغ','التاريخ','ملاحظة / رقم الفاتورة'],['أحمد محمود','01012345678','شارع التحرير، الدقي',1500,'15/10/2026','فاتورة 120'],['محمد علي','','',300,'','']];
     var blob = xlsxFromSheets([[P.plural,rows,[24,16,28,12,14,24]]]), url = URL.createObjectURL(blob), a = document.createElement('a');
-    a.href = url; a.download = 'makhzani-'+k+'-template.xlsx'; document.body.appendChild(a); a.click(); a.remove();
+    a.href = url; a.download = 'qatea-'+k+'-template.xlsx'; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function(){ URL.revokeObjectURL(url); },1000);
   });
 }

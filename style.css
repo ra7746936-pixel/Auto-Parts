@@ -4,15 +4,15 @@
 
 /* Layout: ثلاث شاشات (بيع / مخزن / تقرير). البيع: قايمة أصناف جنب الفاتورة، وعلى الموبايل الفاتورة فوق. */
 :root{
-  --bg:#F1F5F3;
+  --bg:#F3F4F7;
   --surface:#FFFFFF;
-  --surface2:#E6EDEA;
-  --ink:#16211D;
-  --muted:#586963;
-  --line:#D2DCD7;
-  --accent:#0E6B55;
+  --surface2:#E7E9EF;
+  --ink:#1A1D26;
+  --muted:#5B6272;
+  --line:#D5D8E0;
+  --accent:#C2410C;
   --accent-ink:#FFFFFF;
-  --ok-bg:#D6EFE5; --ok-ink:#0A5240;
+  --ok-bg:#DCEFE0; --ok-ink:#14532D;
   --warn-bg:#FBEBC8; --warn-ink:#7A4B00;
   --bad-bg:#F8DAD5; --bad-ink:#8F2A1F;
   --font-display:'Reem Kufi','Cairo',system-ui,sans-serif;
@@ -20,18 +20,18 @@
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#0E1512; --surface:#17211D; --surface2:#1F2C27; --ink:#E6EFEB; --muted:#9BAEA6; --line:#2B3B35;
-    --accent:#4CC3A0; --accent-ink:#06231B;
-    --ok-bg:#12372D; --ok-ink:#8FE0C4;
+    --bg:#12141A; --surface:#1C2029; --surface2:#262B37; --ink:#ECEEF3; --muted:#A4ABBA; --line:#323847;
+    --accent:#FB923C; --accent-ink:#2A1200;
+    --ok-bg:#173A24; --ok-ink:#9BE3AE;
     --warn-bg:#3D2E0E; --warn-ink:#F3C772;
     --bad-bg:#42201B; --bad-ink:#F5A89D;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#0E1512; --surface:#17211D; --surface2:#1F2C27; --ink:#E6EFEB; --muted:#9BAEA6; --line:#2B3B35;
-  --accent:#4CC3A0; --accent-ink:#06231B;
-  --ok-bg:#12372D; --ok-ink:#8FE0C4;
+  --bg:#12141A; --surface:#1C2029; --surface2:#262B37; --ink:#ECEEF3; --muted:#A4ABBA; --line:#323847;
+  --accent:#FB923C; --accent-ink:#2A1200;
+  --ok-bg:#173A24; --ok-ink:#9BE3AE;
   --warn-bg:#3D2E0E; --warn-ink:#F3C772;
   --bad-bg:#42201B; --bad-ink:#F5A89D;
   color-scheme:dark;
@@ -316,3 +316,5 @@ html.authing #app{display:none}
 .qx{position:absolute;inset-inline-end:4px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;border-radius:8px;background:transparent;color:inherit;font-size:22px;line-height:1;cursor:pointer}
 .qx:hover{background:var(--surface2,rgba(127,127,127,.15))}
 select[size]:not([size="1"]){width:100%;min-height:120px}
+.rcv{border:2px solid var(--accent,#0a7);margin-bottom:10px}.rcv-l{margin:6px 0;padding-inline-start:18px}
+#rcv-box .hint{margin:6px 0}
