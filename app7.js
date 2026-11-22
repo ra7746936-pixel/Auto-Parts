@@ -49,6 +49,8 @@ function renderLocs(){
   }
   var sn = $('#stk-note');
   if(sn){ var on = cloud && owner && (shopCfg.locs||[]).length>0; sn.hidden = !on; if(on) sn.textContent = 'الأرقام في تبويب المخزن دي هي المخزن الرئيسي بس. رصيد العربيات وتحويل البضاعة في تبويب «المواقع».'; }
+  var il = $('#inv-loc');
+  if(il){ var has = cloud && owner && (shopCfg.locs||[]).length>0; il.hidden = !has; if(has){ var cv = il.value; il.innerHTML = '<option value="">كل الأماكن</option>'+locAll().map(function(l){ return '<option value="'+esc(l.id)+'">'+esc(l.name)+'</option>'; }).join(''); il.value = cv; } else il.value = ''; }
   var sel = $('#cc-loc');
   if(sel){ var cur = sel.value; sel.innerHTML = locAll().map(function(l){ return '<option value="'+esc(l.id)+'">'+esc(l.name)+'</option>'; }).join(''); if(cur) sel.value = cur; }
   if(!owner || !cloud || view!=='loc') return;
